@@ -52,6 +52,7 @@ export default function Tracking() {
     filteredVehicles.find((vehicle) => vehicle.vehicleId === selectedVehicleId) ||
     filteredVehicles[0] ||
     data.liveVehicles[0];
+
   const summary = {
     onRoute: data.liveVehicles.filter((vehicle) => vehicle.status === 'On Route').length,
     delayed: data.liveVehicles.filter((vehicle) => vehicle.status === 'Delayed').length,
@@ -165,9 +166,17 @@ export default function Tracking() {
             vehicles={filteredVehicles}
             selectedVehicleId={selectedVehicle?.vehicleId}
             onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
+            showInlinePopup={false}
           />
         </div>
         <div className="tracking-sidebar-column">
+          {selectedVehicle && (
+            <div className="page-card route-history-card selected-vehicle-panel">
+              <div className="card-header"><h3>Selected vehicle</h3></div>
+              <VehicleLivePopup vehicle={selectedVehicle} />
+            </div>
+          )}
+
           <div className="page-card tracking-list-card tracking-vehicle-list-card">
             <div className="card-header"><h3>Fleet list</h3><span className="vehicle-count">{filteredVehicles.length} vehicles</span></div>
             <div className="vehicle-list enhanced">
@@ -211,8 +220,6 @@ export default function Tracking() {
           )}
         </div>
       </div>
-
-      {selectedVehicle && <VehicleLivePopup vehicle={selectedVehicle} />}
     </div>
   );
 }
