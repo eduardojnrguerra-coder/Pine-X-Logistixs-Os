@@ -1,0 +1,166 @@
+import { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Search } from 'lucide-react';
+import IntegrationStatusBadge from '../components/IntegrationStatusBadge';
+import LiveFleetMap from '../components/LiveFleetMap';
+import VehicleLivePopup from '../components/VehicleLivePopup';
+import ScenarioBadge from '../components/ScenarioBadge';
+import { usePresenterMode } from '../context/PresenterModeContext';
+import { trackingService, TRACKING_MODES, TRACKING_PROVIDERS, providerLabels } from '../services/trackingService';
+
+export default function Tracking() {
+  const { data, scenario } = usePresenterMode();
+  const [provider, setProvider] = useState(trackingService.getProvider());
+  const [mode, setMode] = useState(trackingService.getMode());
+  const [selectedVehicleId, setSelectedVehicleId] = useState(data.liveVehicles[0]?.vehicleId || null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+
+  const filteredVehicles = useMemo(() => {
+    const query = searchTerm.toLowerCase();
+    return data.liveVehicles.filter((vehicle) => {
+      const matchesQuery =
+        searchTerm === '' ||
+        vehicle.registration.toLowerCase().includes(query) ||
+        vehicle.vehicleName.toLowerCase().includes(query) ||
+        vehicle.driverName.toLowerCase().includes(query) ||
+        vehicle.customerName.toLowerCase().includes(query);
+      const matchesStatus = statusFilter === 'All' || vehicle.status === statusFilter;
+      return matchesQuery && matchesStatus;
+    });
+  }, [data.liveVehicles, searchTerm, statusFilter]);
+
+  const selectedVehicle = filteredVehicles.find((vehicle) => vehicle.vehicleId === selectedVehicleId) || data.liveVehicles[0];
+  const summary = {
+    onRoute: data.liveVehicles.filter((vehicle) => vehicle.status === 'On Route').length,
+    delayed: data.liveVehicles.filter((vehicle) => vehicle.status === 'Delayed').length,
+    offline: data.liveVehicles.filter((vehicle) => vehicle.status === 'Offline').length,
+    atSite: data.liveVehicles.filter((vehicle) => vehicle.status === 'At Site').length,
+    atYard: data.liveVehicles.filter((vehicle) => vehicle.status === 'At Yard').length,
+  };
+  const connectionSummary = trackingService.getConnectionSummary();
+
+  useEffect(() => {
+    const unsubscribe = trackingService.subscribeToSettings((snapshot) => {
+      setProvider(snapshot.provider);
+      setMode(snapshot.mode);
+    });
+    return unsubscribe;
+  }, []);
+
+  return (
+    <div className="page-container tracking-page">
+      <div className="page-header">
+        <div>
+          <h1>Live Fleet Tracking</h1>
+          <p>Real-time simulated fleet map tied directly to the active presenter scenario.</p>
+        </div>
+        <ScenarioBadge scenario={scenario} />
+      </div>
+
+      <div className="tracking-connection-panel">
+        <div>
+          <h3>Tracker connection status</h3>
+          <p>
+            {mode === TRACKING_MODES.LIVE
+              ? `Live provider mode is selected for ${providerLabels[provider]}.`
+              : 'Demo mode is running the presenter-linked live fleet simulator.'}
+          </p>
+        </div>
+        <div className="tracking-connection-meta">
+          <IntegrationStatusBadge status={connectionSummary.status} />
+          {mode === TRACKING_MODES.LIVE && provider !== TRACKING_PROVIDERS.DEMO && (
+            <div className="live-mode-warning compact">
+              <AlertTriangle size={14} />
+              <span>{connectionSummary.warning}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="page-actions tracking-actions">
+        <div className="provider-selector">
+          <span className="provider-label">Provider:</span>
+          <select value={provider} onChange={(event) => { trackingService.setProvider(event.target.value); setProvider(event.target.value); }}>
+            <option value={TRACKING_PROVIDERS.DEMO}>Demo (Simulated)</option>
+            <option value={TRACKING_PROVIDERS.CARTRACK}>Cartrack</option>
+            <option value={TRACKING_PROVIDERS.NETSTAR}>Netstar</option>
+            <option value={TRACKING_PROVIDERS.TRACKER_SA}>Tracker SA</option>
+            <option value={TRACKING_PROVIDERS.MIX_TELEMATICS}>Mix Telematics</option>
+            <option value={TRACKING_PROVIDERS.CTRACK}>Ctrack</option>
+            <option value={TRACKING_PROVIDERS.WEBFLEET}>Webfleet</option>
+            <option value={TRACKING_PROVIDERS.TELTONIKA}>Teltonika</option>
+          </select>
+        </div>
+
+        <div className="tracking-filter-row">
+          <label className="search-mini">
+            <Search size={16} />
+            <input type="text" placeholder="Search vehicle, driver, customer..." value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} />
+          </label>
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="All">All statuses</option>
+            <option value="On Route">On Route</option>
+            <option value="Delayed">Delayed</option>
+            <option value="Offline">Offline</option>
+            <option value="At Site">At Site</option>
+            <option value="At Yard">At Yard</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="tracking-stats tracking-stats-expanded">
+        <div className="tracking-stat success"><span className="stat-value">{summary.onRoute}</span><span className="stat-label">Vehicles on route</span></div>
+        <div className="tracking-stat danger"><span className="stat-value">{summary.delayed}</span><span className="stat-label">Delayed</span></div>
+        <div className="tracking-stat neutral"><span className="stat-value">{summary.offline}</span><span className="stat-label">Offline trackers</span></div>
+        <div className="tracking-stat info"><span className="stat-value">{summary.atSite}</span><span className="stat-label">At site</span></div>
+        <div className="tracking-stat purple"><span className="stat-value">{summary.atYard}</span><span className="stat-label">At yard</span></div>
+      </div>
+
+      <div className="tracking-grid-upgraded">
+        <div className="tracking-map-column">
+          <LiveFleetMap vehicles={filteredVehicles} selectedVehicleId={selectedVehicle?.vehicleId} onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)} />
+        </div>
+        <div className="tracking-sidebar-column">
+          <div className="page-card tracking-list-card tracking-vehicle-list-card">
+            <div className="card-header"><h3>Fleet list</h3><span className="vehicle-count">{filteredVehicles.length} vehicles</span></div>
+            <div className="vehicle-list enhanced">
+              {filteredVehicles.map((vehicle) => (
+                <button key={vehicle.vehicleId} type="button" className={`vehicle-item enhanced ${selectedVehicle?.vehicleId === vehicle.vehicleId ? 'selected' : ''}`} onClick={() => setSelectedVehicleId(vehicle.vehicleId)}>
+                  <div className="vehicle-status-indicator"><span className="status-dot" style={{ backgroundColor: vehicle.statusColor }} /></div>
+                  <div className="vehicle-info">
+                    <span className="vehicle-reg">{vehicle.registration}</span>
+                    <span className="vehicle-driver">{vehicle.driverName} · {vehicle.customerName}</span>
+                  </div>
+                  <div className="vehicle-data">
+                    <span className="status-text">{vehicle.status}</span>
+                    <span className="vehicle-speed">{vehicle.eta}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {selectedVehicle && (
+            <div className="page-card route-history-card">
+              <div className="card-header"><h3>Route history timeline</h3></div>
+              <div className="route-history-list">
+                {selectedVehicle.routeHistory.map((entry) => (
+                  <div key={`${entry.label}-${entry.time}`} className="route-history-item">
+                    <div className="route-history-dot" />
+                    <div>
+                      <strong>{entry.label}</strong>
+                      <p>{entry.detail}</p>
+                      <span>{new Date(entry.time).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {selectedVehicle && <VehicleLivePopup vehicle={selectedVehicle} />}
+    </div>
+  );
+}
