@@ -99,6 +99,12 @@ export const TRACKING_ROUTE_CORRIDORS = [
   },
 ];
 
+export const TRACKING_RISK_ZONES = [
+  { id: 'zone-kleinmond', label: 'Delay risk', mapX: 46, mapY: 48, radius: 5.8, severity: 'warning' },
+  { id: 'zone-gansbaai', label: 'Tracker blind spot', mapX: 72, mapY: 64, radius: 5.2, severity: 'danger' },
+  { id: 'zone-caledon', label: 'Fuel risk', mapX: 68, mapY: 42, radius: 4.8, severity: 'info' },
+];
+
 const VEHICLE_ROUTE_ASSIGNMENTS = {
   V001: 'route-hermanus-onrus',
   V002: 'route-somerset-cape',
@@ -128,6 +134,8 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const lerp = (a, b, t) => a + (b - a) * t;
 const easeInOut = (t) => t * t * (3 - 2 * t);
 
+let simulatorSpeedMultiplier = 1;
+
 const getHeading = (start, end) => {
   const deltaY = end.latitude - start.latitude;
   const deltaX = end.longitude - start.longitude;
@@ -140,26 +148,6 @@ const formatEta = (minutes) => {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
   return `${hours}h ${remainder}m`;
-};
-
-const buildVehicleInsights = (state) => {
-  const primaryInsight =
-    state.scheduleState === 'Delayed'
-      ? 'Potential delay'
-      : state.scheduleState === 'At risk'
-        ? 'At risk'
-        : state.scheduleState === 'Ahead of schedule'
-          ? 'Ahead of schedule'
-          : 'On time';
-
-  const insights = [{ label: primaryInsight, tone: state.scheduleState === 'Delayed' ? 'danger' : state.scheduleState === 'At risk' ? 'warning' : 'success' }];
-
-  if (state.idleMinutes >= 10) insights.push({ label: `Idle for ${state.idleMinutes} min`, tone: 'warning' });
-  if (state.fuelLevel <= 25) insights.push({ label: 'Fuel level low', tone: 'warning' });
-  if (state.status === 'Offline') insights.push({ label: 'Tracker offline', tone: 'neutral' });
-  if (state.serviceDueKm <= 2500) insights.push({ label: 'Service due soon', tone: 'warning' });
-
-  return insights.slice(0, 4);
 };
 
 const getRouteById = (routeId) =>
@@ -181,19 +169,63 @@ const getScheduleState = (status, routeProgress, speed) => {
   return 'On time';
 };
 
+const buildLiveAlerts = (state) => {
+  const alerts = [];
+  if (state.status === 'Delayed') alerts.push({ label: 'DELAY RISK', tone: 'danger' });
+  if (state.status === 'Offline' || state.trackerAlert) alerts.push({ label: 'TRACKER LOST', tone: 'neutral' });
+  if (state.fuelLevel <= 25) alerts.push({ label: 'LOW FUEL', tone: 'warning' });
+  return alerts.slice(0, 2);
+};
+
+const buildVehicleInsights = (state) => {
+  const primaryInsight =
+    state.scheduleState === 'Delayed'
+      ? 'Potential delay'
+      : state.scheduleState === 'At risk'
+        ? 'At risk'
+        : state.scheduleState === 'Ahead of schedule'
+          ? 'Ahead of schedule'
+          : 'On time';
+
+  const insights = [
+    {
+      label: primaryInsight,
+      tone:
+        state.scheduleState === 'Delayed'
+          ? 'danger'
+          : state.scheduleState === 'At risk'
+            ? 'warning'
+            : 'success',
+    },
+  ];
+
+  if (state.idleMinutes >= 10) insights.push({ label: `Idle for ${state.idleMinutes} min`, tone: 'warning' });
+  if (state.fuelLevel <= 25) insights.push({ label: 'Fuel level low', tone: 'warning' });
+  if (state.status === 'Offline') insights.push({ label: 'Tracker offline', tone: 'neutral' });
+  if (state.serviceDueKm <= 2500) insights.push({ label: 'Service due soon', tone: 'warning' });
+
+  return insights.slice(0, 4);
+};
+
+const appendTrailPoint = (trail, point) => [...(trail || []).slice(-7), point];
+
 const createVehicleState = (vehicle, index) => {
   const route = getRouteById(VEHICLE_ROUTE_ASSIGNMENTS[vehicle.id]);
   const job = getJobById(vehicle.currentJobId);
   const driver = getDriverById(vehicle.driverId);
   const customer = job ? getCustomerById(job.customerId) : null;
   const maintenanceItem = MAINTENANCE.find((item) => item.vehicleId === vehicle.id && item.status !== 'Completed');
-  const trackerAlert = ALERTS.find((alert) => alert.vehicleId === vehicle.id && alert.type === 'Tracker Offline' && alert.status !== 'Resolved');
+  const trackerAlert = ALERTS.find(
+    (alert) => alert.vehicleId === vehicle.id && alert.type === 'Tracker Offline' && alert.status !== 'Resolved'
+  );
   const baseStatus = getVehicleBaseStatus(vehicle, job);
   const initialSegment = vehicle.status === 'Idle' ? 0 : clamp(index % (route.points.length - 1), 0, route.points.length - 2);
   const initialProgress = baseStatus === 'On Route' || baseStatus === 'Delayed' ? 0.12 + (index % 3) * 0.18 : 0;
   const start = route.points[initialSegment];
   const end = route.points[initialSegment + 1] || start;
   const easedProgress = easeInOut(initialProgress);
+  const baseMapX = lerp(start.mapX, end.mapX, easedProgress);
+  const baseMapY = lerp(start.mapY, end.mapY, easedProgress);
 
   const state = {
     vehicleId: vehicle.id,
@@ -203,9 +235,19 @@ const createVehicleState = (vehicle, index) => {
     trackerDeviceId: vehicle.trackerDeviceId,
     latitude: lerp(start.latitude, end.latitude, easedProgress),
     longitude: lerp(start.longitude, end.longitude, easedProgress),
-    mapX: lerp(start.mapX, end.mapX, easedProgress),
-    mapY: lerp(start.mapY, end.mapY, easedProgress),
+    mapX: baseMapX,
+    mapY: baseMapY,
+    baseMapX,
+    baseMapY,
     speed:
+      baseStatus === 'On Route'
+        ? start.zone === 'town'
+          ? 34 + (index % 2) * 4
+          : 58 + (index % 3) * 7
+        : baseStatus === 'Delayed'
+          ? 18
+          : 0,
+    targetSpeed:
       baseStatus === 'On Route'
         ? start.zone === 'town'
           ? 34 + (index % 2) * 4
@@ -248,9 +290,13 @@ const createVehicleState = (vehicle, index) => {
     latestStop: start.name,
     scheduleState: getScheduleState(baseStatus, 0, 0),
     routeHistory: [],
+    movementTrail: appendTrailPoint([], { mapX: baseMapX, mapY: baseMapY }),
+    motionTick: index * 3,
+    idleJitterSeed: index + 1,
   };
 
   state.scheduleState = getScheduleState(state.status, state.routeProgress, state.speed);
+  state.liveAlerts = buildLiveAlerts(state);
   state.insights = buildVehicleInsights(state);
   state.routeHistory = [
     {
@@ -273,56 +319,74 @@ const createVehicleState = (vehicle, index) => {
   return state;
 };
 
+const getIdleJitter = (vehicle) => ({
+  x: Math.sin((vehicle.motionTick + vehicle.idleJitterSeed) / 1.8) * 0.12,
+  y: Math.cos((vehicle.motionTick + vehicle.idleJitterSeed) / 2.2) * 0.09,
+});
+
 const advanceVehicle = (vehicle) => {
   const now = new Date().toISOString();
+  const motionTick = vehicle.motionTick + 1;
 
   if (vehicle.status === 'Offline') {
     const offlineVehicle = {
       ...vehicle,
-      speed: 0,
+      speed: Math.max(0, vehicle.speed - 8),
+      targetSpeed: 0,
       ignitionStatus: 'Off',
       eta: 'Tracker offline',
       scheduleState: 'Delayed',
+      motionTick,
+      liveAlerts: buildLiveAlerts(vehicle),
     };
-    return {
-      ...offlineVehicle,
-      insights: buildVehicleInsights(offlineVehicle),
-    };
+    offlineVehicle.insights = buildVehicleInsights(offlineVehicle);
+    return offlineVehicle;
   }
 
   if (vehicle.status === 'Maintenance') {
     const workshop = LOCATION_POINTS.Workshop;
     const maintenanceVehicle = {
       ...vehicle,
+      baseMapX: workshop.mapX,
+      baseMapY: workshop.mapY,
       mapX: workshop.mapX,
       mapY: workshop.mapY,
       latitude: workshop.latitude,
       longitude: workshop.longitude,
       speed: 0,
+      targetSpeed: 0,
       ignitionStatus: 'Off',
       eta: 'Workshop',
       nextStop: 'Workshop bay',
       scheduleState: 'At risk',
       lastSeen: now,
+      motionTick,
+      movementTrail: appendTrailPoint(vehicle.movementTrail, { mapX: workshop.mapX, mapY: workshop.mapY }),
     };
-    return {
-      ...maintenanceVehicle,
-      insights: buildVehicleInsights(maintenanceVehicle),
-    };
+    maintenanceVehicle.liveAlerts = buildLiveAlerts(maintenanceVehicle);
+    maintenanceVehicle.insights = buildVehicleInsights(maintenanceVehicle);
+    return maintenanceVehicle;
   }
 
   if (vehicle.pauseTicks > 0) {
+    const jitter = getIdleJitter({ ...vehicle, motionTick });
     const pausedVehicle = {
       ...vehicle,
       pauseTicks: vehicle.pauseTicks - 1,
-      speed: 0,
+      speed: Math.max(0, vehicle.speed - 10),
+      targetSpeed: 0,
       status: vehicle.status === 'At Yard' ? 'At Yard' : 'At Site',
       ignitionStatus: vehicle.status === 'At Yard' ? 'Off' : 'On',
       idleMinutes: vehicle.idleMinutes + 2,
       eta: formatEta(Math.max(8, Math.round((100 - vehicle.routeProgress) * 0.9))),
       lastSeen: now,
+      motionTick,
+      mapX: vehicle.baseMapX + jitter.x,
+      mapY: vehicle.baseMapY + jitter.y,
+      movementTrail: appendTrailPoint(vehicle.movementTrail, { mapX: vehicle.baseMapX + jitter.x, mapY: vehicle.baseMapY + jitter.y }),
     };
     pausedVehicle.scheduleState = getScheduleState(pausedVehicle.status, pausedVehicle.routeProgress, pausedVehicle.speed);
+    pausedVehicle.liveAlerts = buildLiveAlerts(pausedVehicle);
     pausedVehicle.insights = buildVehicleInsights(pausedVehicle);
     return pausedVehicle;
   }
@@ -332,10 +396,24 @@ const advanceVehicle = (vehicle) => {
   const start = routePoints[currentIndex];
   const end = routePoints[currentIndex + 1] || start;
   const approachingStop = end.stop && vehicle.segmentProgress > 0.68;
-  const baseIncrement = approachingStop ? 0.12 : start.zone === 'town' ? 0.18 : 0.24;
   const delayMode = vehicle.currentJobId === 'JOB-010' || vehicle.status === 'Delayed';
+  let targetSpeed;
+
+  if (delayMode) {
+    targetSpeed = 7 + Math.round(Math.random() * 18);
+  } else if (start.zone === 'town') {
+    targetSpeed = 24 + Math.round(Math.random() * 18);
+  } else {
+    targetSpeed = 56 + Math.round(Math.random() * 28);
+  }
+
+  if (approachingStop) {
+    targetSpeed = Math.max(8, targetSpeed - 22);
+  }
+
+  const acceleratedSpeed = clamp(vehicle.speed + clamp(targetSpeed - vehicle.speed, -9, 11), 0, 90);
   const nextSegmentProgress = clamp(
-    vehicle.segmentProgress + (delayMode ? baseIncrement * 0.45 : baseIncrement),
+    vehicle.segmentProgress + ((acceleratedSpeed / 100) * 0.19 + 0.03) * simulatorSpeedMultiplier,
     0,
     1
   );
@@ -361,30 +439,30 @@ const advanceVehicle = (vehicle) => {
   const easedProgress = easeInOut(segmentProgress);
   const latitude = lerp(nextStart.latitude, nextEnd.latitude, easedProgress);
   const longitude = lerp(nextStart.longitude, nextEnd.longitude, easedProgress);
-  const mapX = lerp(nextStart.mapX, nextEnd.mapX, easedProgress);
-  const mapY = lerp(nextStart.mapY, nextEnd.mapY, easedProgress);
+  const baseMapX = lerp(nextStart.mapX, nextEnd.mapX, easedProgress);
+  const baseMapY = lerp(nextStart.mapY, nextEnd.mapY, easedProgress);
   const routeProgress = Math.round(((nextIndex + segmentProgress) / Math.max(1, routePoints.length - 1)) * 100);
 
-  let speed = 0;
-  if (status === 'On Route') {
-    speed = nextStart.zone === 'town' ? 24 + Math.round(Math.random() * 18) : 54 + Math.round(Math.random() * 28);
-    if (approachingStop) speed = Math.max(20, speed - 18);
-  } else if (status === 'Delayed') {
-    speed = 7 + Math.round(Math.random() * 17);
+  let speed = acceleratedSpeed;
+  if (status === 'Delivered' || status === 'At Site' || status === 'At Yard') {
+    speed = 0;
   }
 
   const etaMinutes =
     status === 'Delivered'
       ? 0
-      : Math.max(6, Math.round(((100 - routeProgress) / 100) * (status === 'Delayed' ? 135 : 82)));
+      : Math.max(6, Math.round(((100 - routeProgress) / 100) * (status === 'Delayed' ? 135 : 82) / simulatorSpeedMultiplier));
 
   const updated = {
     ...vehicle,
     latitude,
     longitude,
-    mapX,
-    mapY,
+    baseMapX,
+    baseMapY,
+    mapX: baseMapX,
+    mapY: baseMapY,
     speed,
+    targetSpeed,
     heading: getHeading(nextStart, nextEnd),
     ignitionStatus: status === 'Delivered' ? 'Off' : status === 'At Yard' ? 'Off' : 'On',
     odometer: vehicle.odometer + Math.max(0, Math.round(speed / 7)),
@@ -400,9 +478,12 @@ const advanceVehicle = (vehicle) => {
     idleMinutes: pauseTicks > 0 ? vehicle.idleMinutes + 2 : 0,
     latestStop: nextStart.name,
     delayReason: status === 'Delayed' ? vehicle.delayReason || 'Traffic congestion and slow customer access.' : '',
+    motionTick,
+    movementTrail: appendTrailPoint(vehicle.movementTrail, { mapX: baseMapX, mapY: baseMapY }),
   };
 
   updated.scheduleState = getScheduleState(updated.status, updated.routeProgress, updated.speed);
+  updated.liveAlerts = buildLiveAlerts(updated);
   updated.insights = buildVehicleInsights(updated);
   updated.routeHistory = [
     {
@@ -453,6 +534,15 @@ class LiveFleetSimulator {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+  }
+
+  setSpeedMultiplier(multiplier) {
+    simulatorSpeedMultiplier = multiplier;
+    this.emit();
+  }
+
+  getSpeedMultiplier() {
+    return simulatorSpeedMultiplier;
   }
 
   subscribe(listener) {
