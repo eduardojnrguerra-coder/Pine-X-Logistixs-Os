@@ -14,6 +14,22 @@ export default function Tracking() {
   const [selectedVehicleId, setSelectedVehicleId] = useState(data.liveVehicles[0]?.vehicleId || null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [vehicleFilter, setVehicleFilter] = useState('All');
+  const [driverFilter, setDriverFilter] = useState('All');
+  const [customerFilter, setCustomerFilter] = useState('All');
+
+  const vehicleOptions = useMemo(
+    () => ['All', ...data.liveVehicles.map((vehicle) => vehicle.vehicleName)],
+    [data.liveVehicles]
+  );
+  const driverOptions = useMemo(
+    () => ['All', ...Array.from(new Set(data.liveVehicles.map((vehicle) => vehicle.driverName)))],
+    [data.liveVehicles]
+  );
+  const customerOptions = useMemo(
+    () => ['All', ...Array.from(new Set(data.liveVehicles.map((vehicle) => vehicle.customerName)))],
+    [data.liveVehicles]
+  );
 
   const filteredVehicles = useMemo(() => {
     const query = searchTerm.toLowerCase();
@@ -25,11 +41,17 @@ export default function Tracking() {
         vehicle.driverName.toLowerCase().includes(query) ||
         vehicle.customerName.toLowerCase().includes(query);
       const matchesStatus = statusFilter === 'All' || vehicle.status === statusFilter;
-      return matchesQuery && matchesStatus;
+      const matchesVehicle = vehicleFilter === 'All' || vehicle.vehicleName === vehicleFilter;
+      const matchesDriver = driverFilter === 'All' || vehicle.driverName === driverFilter;
+      const matchesCustomer = customerFilter === 'All' || vehicle.customerName === customerFilter;
+      return matchesQuery && matchesStatus && matchesVehicle && matchesDriver && matchesCustomer;
     });
-  }, [data.liveVehicles, searchTerm, statusFilter]);
+  }, [customerFilter, data.liveVehicles, driverFilter, searchTerm, statusFilter, vehicleFilter]);
 
-  const selectedVehicle = filteredVehicles.find((vehicle) => vehicle.vehicleId === selectedVehicleId) || data.liveVehicles[0];
+  const selectedVehicle =
+    filteredVehicles.find((vehicle) => vehicle.vehicleId === selectedVehicleId) ||
+    filteredVehicles[0] ||
+    data.liveVehicles[0];
   const summary = {
     onRoute: data.liveVehicles.filter((vehicle) => vehicle.status === 'On Route').length,
     delayed: data.liveVehicles.filter((vehicle) => vehicle.status === 'Delayed').length,
@@ -105,6 +127,27 @@ export default function Tracking() {
             <option value="At Site">At Site</option>
             <option value="At Yard">At Yard</option>
           </select>
+          <select value={vehicleFilter} onChange={(event) => setVehicleFilter(event.target.value)}>
+            {vehicleOptions.map((option) => (
+              <option key={option} value={option}>
+                {option === 'All' ? 'All vehicles' : option}
+              </option>
+            ))}
+          </select>
+          <select value={driverFilter} onChange={(event) => setDriverFilter(event.target.value)}>
+            {driverOptions.map((option) => (
+              <option key={option} value={option}>
+                {option === 'All' ? 'All drivers' : option}
+              </option>
+            ))}
+          </select>
+          <select value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)}>
+            {customerOptions.map((option) => (
+              <option key={option} value={option}>
+                {option === 'All' ? 'All customers' : option}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -118,18 +161,27 @@ export default function Tracking() {
 
       <div className="tracking-grid-upgraded">
         <div className="tracking-map-column">
-          <LiveFleetMap vehicles={filteredVehicles} selectedVehicleId={selectedVehicle?.vehicleId} onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)} />
+          <LiveFleetMap
+            vehicles={filteredVehicles}
+            selectedVehicleId={selectedVehicle?.vehicleId}
+            onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
+          />
         </div>
         <div className="tracking-sidebar-column">
           <div className="page-card tracking-list-card tracking-vehicle-list-card">
             <div className="card-header"><h3>Fleet list</h3><span className="vehicle-count">{filteredVehicles.length} vehicles</span></div>
             <div className="vehicle-list enhanced">
               {filteredVehicles.map((vehicle) => (
-                <button key={vehicle.vehicleId} type="button" className={`vehicle-item enhanced ${selectedVehicle?.vehicleId === vehicle.vehicleId ? 'selected' : ''}`} onClick={() => setSelectedVehicleId(vehicle.vehicleId)}>
+                <button
+                  key={vehicle.vehicleId}
+                  type="button"
+                  className={`vehicle-item enhanced ${selectedVehicle?.vehicleId === vehicle.vehicleId ? 'selected' : ''}`}
+                  onClick={() => setSelectedVehicleId(vehicle.vehicleId)}
+                >
                   <div className="vehicle-status-indicator"><span className="status-dot" style={{ backgroundColor: vehicle.statusColor }} /></div>
                   <div className="vehicle-info">
                     <span className="vehicle-reg">{vehicle.registration}</span>
-                    <span className="vehicle-driver">{vehicle.driverName} · {vehicle.customerName}</span>
+                    <span className="vehicle-driver">{`${vehicle.driverName} · ${vehicle.customerName}`}</span>
                   </div>
                   <div className="vehicle-data">
                     <span className="status-text">{vehicle.status}</span>
