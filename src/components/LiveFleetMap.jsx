@@ -12,18 +12,23 @@ import {
   Truck,
   X,
 } from 'lucide-react';
-import VehicleLivePopup from './VehicleLivePopup';
-import VehicleStatusLegend from './VehicleStatusLegend';
+import FleetHudBar from './FleetHudBar';
+import FleetTray from './FleetTray';
+import LiveEventTicker from './LiveEventTicker';
+import ScenarioBadge from './ScenarioBadge';
+import VehicleIntelPanel from './VehicleIntelPanel';
 import {
+  TRACKING_GEOFENCES,
   TRACKING_MAP_POINTS,
-  TRACKING_RISK_ZONES,
   TRACKING_ROUTE_CORRIDORS,
   liveFleetSimulator,
 } from '../services/liveFleetSimulator';
 
 const COAST_PATH =
-  'M 0 0 L 0 100 L 20 100 C 24 92, 28 86, 32 79 C 36 72, 40 68, 46 62 C 51 56, 55 50, 60 43 C 66 35, 73 26, 81 17 C 88 10, 94 5, 100 3 L 100 0 Z';
-const STATUS_FILTERS = ['All', 'On Route', 'Delayed', 'Offline', 'At Site', 'At Yard'];
+  'M 0 0 L 0 100 L 21 100 C 25 91, 27 84, 31 77 C 36 68, 42 64, 50 59 C 58 54, 63 47, 68 39 C 74 29, 83 18, 92 9 C 96 5, 99 3, 100 2 L 100 0 Z';
+const TERRAIN_PATH =
+  'M 14 18 C 26 12, 42 16, 53 25 C 65 35, 73 36, 84 31 L 93 43 C 82 49, 76 55, 76 66 C 65 72, 53 74, 41 68 C 28 62, 20 52, 12 42 Z';
+const STATUS_FILTERS = ['All', 'On Route', 'Delayed', 'Offline', 'At Site', 'At Yard', 'Maintenance'];
 const SPEED_OPTIONS = [0.75, 1, 1.5, 2];
 
 const buildPath = (points) => {
@@ -33,8 +38,9 @@ const buildPath = (points) => {
 
   rest.forEach((point, index) => {
     const previous = points[index];
-    const controlX = (previous.mapX + point.mapX) / 2;
-    commands.push(`Q ${controlX} ${previous.mapY} ${point.mapX} ${point.mapY}`);
+    const controlX = previous.mapX + (point.mapX - previous.mapX) * 0.55;
+    const controlY = previous.mapY + (point.mapY - previous.mapY) * 0.18;
+    commands.push(`Q ${controlX} ${controlY} ${point.mapX} ${point.mapY}`);
   });
 
   return commands.join(' ');
@@ -52,28 +58,35 @@ const getDirectionMarkers = (points, active = false) =>
       mapX,
       mapY,
       heading,
-      active,
     };
   });
 
 const getThemePalette = (theme) =>
   theme === 'dark'
     ? {
-        landStart: '#091325',
-        landEnd: '#12243c',
-        oceanStart: '#071119',
-        oceanEnd: '#10314d',
-        gridStroke: 'rgba(148, 163, 184, 0.12)',
-        labelColor: 'rgba(226, 232, 240, 0.72)',
+        landStart: '#07111f',
+        landEnd: '#111827',
+        waterStart: '#03101a',
+        waterEnd: '#0d2a40',
+        terrain: 'rgba(30, 41, 59, 0.46)',
+        grid: 'rgba(148, 163, 184, 0.13)',
+        label: 'rgba(226, 232, 240, 0.68)',
       }
     : {
         landStart: '#ffffff',
         landEnd: '#edf5fb',
-        oceanStart: '#cfe9ff',
-        oceanEnd: '#9dcaf7',
-        gridStroke: 'rgba(148, 163, 184, 0.08)',
-        labelColor: 'rgba(71, 85, 105, 0.72)',
+        waterStart: '#cfe9ff',
+        waterEnd: '#9dcaf7',
+        terrain: 'rgba(226, 232, 240, 0.42)',
+        grid: 'rgba(100, 116, 139, 0.09)',
+        label: 'rgba(71, 85, 105, 0.72)',
       };
+
+const getPinType = (name) => {
+  if (name.includes('Depot') || name.includes('Yard')) return 'depot';
+  if (name.includes('Site')) return 'site';
+  return 'town';
+};
 
 function MapCanvas({
   vehicles,
@@ -92,111 +105,113 @@ function MapCanvas({
   const palette = getThemePalette(mapTheme);
 
   return (
-    <div className={`live-fleet-map-stage ${fullscreen ? 'fullscreen' : ''} ${mapTheme}`}>
+    <div className={`tactical-map-stage ${fullscreen ? 'fullscreen' : ''} ${compact ? 'compact' : ''} ${mapTheme}`}>
+      <div className="tactical-scanline" />
+      <div className="tactical-radar-sweep" />
       <div
-        className={`live-fleet-map-canvas ${fullscreen ? 'fullscreen' : ''} ${mapTheme}`}
+        className={`live-fleet-map-canvas tactical-map-canvas ${fullscreen ? 'fullscreen' : ''} ${mapTheme}`}
         style={{ transform: `translate(${panOffset.x}%, ${panOffset.y}%) scale(${zoomLevel})` }}
       >
-        <svg
-          viewBox="0 0 100 100"
-          className={`live-fleet-map-svg ${showTraffic ? 'traffic-on' : ''} ${mapTheme}`}
-          aria-label="Live fleet map"
-        >
+        <svg viewBox="0 0 100 100" className={`live-fleet-map-svg tactical-map-svg ${mapTheme}`} aria-label="Live tactical fleet map">
           <defs>
-            <linearGradient id={`oceanGradient-${mapTheme}`} x1="0%" x2="100%" y1="0%" y2="100%">
-              <stop offset="0%" stopColor={palette.oceanStart} />
-              <stop offset="100%" stopColor={palette.oceanEnd} />
-            </linearGradient>
-            <linearGradient id={`landGradient-${mapTheme}`} x1="0%" x2="100%" y1="0%" y2="100%">
+            <linearGradient id={`tacticalLand-${mapTheme}`} x1="0%" x2="100%" y1="0%" y2="100%">
               <stop offset="0%" stopColor={palette.landStart} />
               <stop offset="100%" stopColor={palette.landEnd} />
             </linearGradient>
-            <filter id="routeShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="1.4" stdDeviation="1.1" floodColor="rgba(15, 23, 42, 0.26)" />
-            </filter>
-            <pattern id={`mapGrid-${mapTheme}`} width="8" height="8" patternUnits="userSpaceOnUse">
-              <path d="M 8 0 L 0 0 0 8" fill="none" stroke={palette.gridStroke} strokeWidth="0.28" />
+            <linearGradient id={`tacticalWater-${mapTheme}`} x1="0%" x2="100%" y1="0%" y2="100%">
+              <stop offset="0%" stopColor={palette.waterStart} />
+              <stop offset="100%" stopColor={palette.waterEnd} />
+            </linearGradient>
+            <pattern id={`tacticalGrid-${mapTheme}`} width="5" height="5" patternUnits="userSpaceOnUse">
+              <path d="M 5 0 L 0 0 0 5" fill="none" stroke={palette.grid} strokeWidth="0.25" />
             </pattern>
+            <filter id="corridorGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.2" floodColor="rgba(56, 189, 248, 0.42)" />
+            </filter>
+            <filter id="activeCorridorGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="rgba(34, 197, 94, 0.72)" />
+            </filter>
           </defs>
 
-          <rect x="0" y="0" width="100" height="100" fill={`url(#landGradient-${mapTheme})`} rx="8" />
-          <rect x="0" y="0" width="100" height="100" fill={`url(#mapGrid-${mapTheme})`} rx="8" />
-          <path d={COAST_PATH} fill={`url(#oceanGradient-${mapTheme})`} opacity={mapTheme === 'dark' ? 0.96 : 0.92} />
-          <path d="M 7 19 C 14 22, 18 23, 25 25 C 31 26, 38 30, 47 38 C 53 44, 57 48, 60 53" className="primary-road" />
-          <path d="M 17 18 C 20 16, 24 15, 29 15 C 37 15, 46 17, 52 20" className="background-road" />
-          <path d="M 59 54 C 54 57, 52 59, 50 61" className="local-road" />
-          <path d="M 59 54 C 54 49, 49 47, 43 46" className="primary-road" />
-          <path d="M 43 46 C 39 48, 36 50, 34 53" className="local-road" />
-          <path d="M 59 54 C 65 58, 71 63, 78 67" className="primary-road" />
-          <path d="M 59 54 C 64 46, 69 39, 75 34" className="primary-road" />
-          <path d="M 49 61 C 45 56, 42 53, 38 51 C 34 49, 31 49, 28 50" className="background-road" />
+          <rect x="0" y="0" width="100" height="100" fill={`url(#tacticalLand-${mapTheme})`} />
+          <rect x="0" y="0" width="100" height="100" fill={`url(#tacticalGrid-${mapTheme})`} />
+          <path d={COAST_PATH} fill={`url(#tacticalWater-${mapTheme})`} opacity="0.96" />
+          <path d={TERRAIN_PATH} fill={palette.terrain} opacity="0.72" />
 
-          {TRACKING_RISK_ZONES.map((zone) => (
-            <g key={zone.id} className={`fleet-risk-zone severity-${zone.severity}`}>
+          <g className="tactical-road-network">
+            <path d="M 8 22 C 19 27, 31 33, 44 36 C 51 38, 57 39, 63 38" />
+            <path d="M 63 38 C 63 46, 62 54, 62 62" />
+            <path d="M 62 62 C 55 60, 48 57, 44 52 C 40 55, 36 57, 35 58" />
+            <path d="M 62 62 C 68 61, 75 64, 82 74" />
+            <path d="M 61 38 C 70 42, 74 51, 75 61" />
+            <path d="M 10 25 C 16 28, 22 30, 29 34" />
+          </g>
+
+          {TRACKING_GEOFENCES.map((zone) => (
+            <g key={zone.id} className={`tactical-geofence type-${zone.type} severity-${zone.severity}`}>
               <circle cx={zone.mapX} cy={zone.mapY} r={zone.radius} />
-              <text x={zone.mapX} y={zone.mapY - zone.radius - 1.2} className="risk-zone-label">
-                {zone.label}
-              </text>
-            </g>
-          ))}
-
-          {TRACKING_ROUTE_CORRIDORS.map((route) => (
-            <g key={route.id} filter="url(#routeShadow)">
-              <path d={buildPath(route.points)} className={`fleet-route-line ${showTraffic ? 'traffic-on' : ''}`} />
-              {getDirectionMarkers(route.points).map((marker) => (
-                <polygon
-                  key={marker.key}
-                  points="-0.65,-0.42 0.7,0 -0.65,0.42"
-                  className="fleet-route-arrow"
-                  transform={`translate(${marker.mapX} ${marker.mapY}) rotate(${marker.heading})`}
-                />
-              ))}
-            </g>
-          ))}
-
-          {selectedVehicle && (
-            <g filter="url(#routeShadow)">
-              <path d={buildPath(selectedVehicle.routePoints)} className="fleet-route-line active-route" />
-              {getDirectionMarkers(selectedVehicle.routePoints, true).map((marker) => (
-                <polygon
-                  key={marker.key}
-                  points="-0.7,-0.46 0.82,0 -0.7,0.46"
-                  className="fleet-route-arrow active"
-                  transform={`translate(${marker.mapX} ${marker.mapY}) rotate(${marker.heading})`}
-                />
-              ))}
-            </g>
-          )}
-
-          {Object.entries(TRACKING_MAP_POINTS).map(([name, point]) =>
-            ['Workshop', 'Yard'].includes(name) ? null : (
-              <g key={name}>
-                <circle cx={point.mapX} cy={point.mapY} r="0.5" className="route-node-dot" />
-                <text
-                  x={point.labelX || point.mapX + 1}
-                  y={point.labelY || point.mapY - 1}
-                  className={`route-node-label ${compact ? 'compact' : ''}`}
-                  style={{ fill: palette.labelColor }}
-                >
-                  {name}
+              {!compact && (
+                <text x={zone.mapX} y={zone.mapY - zone.radius - 1.1} className="tactical-geofence-label">
+                  {zone.label}
                 </text>
+              )}
+            </g>
+          ))}
+
+          {TRACKING_ROUTE_CORRIDORS.map((route) => {
+            const active = selectedVehicle?.routeId === route.id;
+            return (
+              <g key={route.id} className={`route-corridor ${active ? 'active' : 'inactive'}`} filter={active ? 'url(#activeCorridorGlow)' : 'url(#corridorGlow)'}>
+                <path d={buildPath(route.points)} className={`fleet-route-line tactical-route ${showTraffic ? 'traffic-on' : ''}`} />
+                <path d={buildPath(route.points)} className="tactical-route-core" />
+                {getDirectionMarkers(route.points, active).map((marker) => (
+                  <polygon
+                    key={marker.key}
+                    points="-0.65,-0.42 0.7,0 -0.65,0.42"
+                    className={`fleet-route-arrow ${active ? 'active' : ''}`}
+                    transform={`translate(${marker.mapX} ${marker.mapY}) rotate(${marker.heading})`}
+                  />
+                ))}
+                {!compact && (
+                  <text x={route.labelX} y={route.labelY} className="route-road-label">
+                    {route.roadLabel}
+                  </text>
+                )}
               </g>
-            )
-          )}
+            );
+          })}
+
+          {Object.entries(TRACKING_MAP_POINTS).map(([name, point]) => {
+            const pinType = getPinType(name);
+            const showLabel = !compact && !['HFC Site', 'Onrus Site'].includes(name);
+            return (
+              <g key={name} className={`tactical-map-pin pin-${pinType}`}>
+                <circle cx={point.mapX} cy={point.mapY} r={pinType === 'town' ? 0.55 : 0.8} />
+                {showLabel && (
+                  <text
+                    x={point.labelX || point.mapX + 1}
+                    y={point.labelY || point.mapY - 1}
+                    className="route-node-label tactical-place-label"
+                    style={{ fill: palette.label }}
+                  >
+                    {name}
+                  </text>
+                )}
+              </g>
+            );
+          })}
         </svg>
 
         {vehicles.map((vehicle, index) => {
           const isSelected = selectedVehicleId === vehicle.vehicleId;
           const isHovered = hoveredVehicleId === vehicle.vehicleId;
-          const showLabel = isSelected || isHovered || (!compact && index % 3 === 0);
+          const showLabel = isSelected || isHovered || fullscreen || (!compact && index % 3 === 0);
 
           return (
-            <div key={`${vehicle.vehicleId}-trail`} className="fleet-trail-layer">
+            <div key={`${vehicle.vehicleId}-layer`} className="fleet-trail-layer">
               <svg viewBox="0 0 100 100" className="fleet-trail-svg" aria-hidden="true">
                 <polyline
-                  points={(vehicle.movementTrail || [])
-                    .map((point) => `${point.mapX},${point.mapY}`)
-                    .join(' ')}
+                  points={(vehicle.movementTrail || []).map((point) => `${point.mapX},${point.mapY}`).join(' ')}
                   className={`fleet-trail-line ${vehicle.status === 'Offline' ? 'offline' : ''}`}
                 />
               </svg>
@@ -214,9 +229,11 @@ function MapCanvas({
               ))}
               <button
                 type="button"
-                className={`fleet-marker ${isSelected ? 'selected' : ''} ${compact ? 'compact' : ''} ${
+                className={`fleet-marker tactical-vehicle-marker ${isSelected ? 'selected' : ''} ${compact ? 'compact' : ''} ${
                   vehicle.status === 'On Route' ? 'live' : ''
-                } ${vehicle.status === 'Delayed' ? 'delayed' : ''} ${vehicle.status === 'Offline' ? 'offline' : ''}`}
+                } ${vehicle.status === 'Delayed' ? 'delayed' : ''} ${vehicle.status === 'Offline' ? 'offline' : ''} ${
+                  vehicle.status === 'At Site' ? 'at-site' : ''
+                }`}
                 style={{
                   left: `${vehicle.mapX}%`,
                   top: `${vehicle.mapY}%`,
@@ -232,7 +249,7 @@ function MapCanvas({
                   <Truck size={compact ? 11 : 13} />
                 </span>
                 {isSelected && <span className="fleet-speed-chip">{Math.round(vehicle.speed)} km/h</span>}
-                <span className={`fleet-marker-label ${showLabel ? 'visible' : ''}`}>
+                <span className={`fleet-marker-label tactical-marker-label ${showLabel ? 'visible' : ''}`}>
                   <strong>{vehicle.vehicleName}</strong>
                   <small>{vehicle.status}</small>
                   <em>{vehicle.eta}</em>
@@ -254,21 +271,23 @@ export default function LiveFleetMap({
   title = 'Live Fleet Map',
   showCompactToolbar = false,
   showInlinePopup = true,
+  scenario,
+  scenarioKey = 'normal',
 }) {
   const [showTraffic, setShowTraffic] = useState(true);
-  const [zoomLevel, setZoomLevel] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState(compact ? 1 : 1.04);
   const [statusFilter, setStatusFilter] = useState('All');
   const [hoveredVehicleId, setHoveredVehicleId] = useState(null);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
   const [followSelected, setFollowSelected] = useState(false);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [toast, setToast] = useState('');
-  const [mapTheme, setMapTheme] = useState('light');
+  const [mapTheme, setMapTheme] = useState('dark');
   const [speedMultiplier, setSpeedMultiplier] = useState(() => liveFleetSimulator.getSpeedMultiplier());
 
   const displayedVehicles = useMemo(() => {
     const filteredByStatus = statusFilter === 'All' ? vehicles : vehicles.filter((vehicle) => vehicle.status === statusFilter);
-    return compact ? filteredByStatus.slice(0, 6) : filteredByStatus;
+    return compact ? filteredByStatus.slice(0, 7) : filteredByStatus;
   }, [compact, statusFilter, vehicles]);
 
   const selectedVehicle =
@@ -294,15 +313,15 @@ export default function LiveFleetMap({
   const centerVehicle = (vehicle) => {
     if (!vehicle) return;
     setPanOffset({
-      x: (50 - vehicle.mapX) * 0.22,
-      y: (50 - vehicle.mapY) * 0.22,
+      x: (50 - vehicle.mapX) * 0.18,
+      y: (50 - vehicle.mapY) * 0.18,
     });
-    setToast(`${vehicle.vehicleName} centered on map`);
+    setToast(`${vehicle.vehicleName} centered`);
   };
 
   const resetView = () => {
     setPanOffset({ x: 0, y: 0 });
-    setZoomLevel(compact ? 1 : 1.02);
+    setZoomLevel(compact ? 1 : 1.04);
     setFollowSelected(false);
     setToast('Map view reset');
   };
@@ -318,7 +337,7 @@ export default function LiveFleetMap({
     const nextValue = Number(event.target.value);
     setSpeedMultiplier(nextValue);
     liveFleetSimulator.setSpeedMultiplier(nextValue);
-    setToast(`Demo speed set to ${nextValue}x`);
+    setToast(`Demo speed ${nextValue}x`);
   };
 
   useEffect(() => {
@@ -334,9 +353,7 @@ export default function LiveFleetMap({
     document.body.style.overflow = 'hidden';
 
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        setFullscreenOpen(false);
-      }
+      if (event.key === 'Escape') setFullscreenOpen(false);
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -347,12 +364,10 @@ export default function LiveFleetMap({
     };
   }, [fullscreenOpen]);
 
-  const toggleFollowSelected = () => {
+  const toggleFollowSelected = (vehicle = selectedVehicle) => {
     setFollowSelected((value) => {
       const nextValue = !value;
-      if (nextValue && selectedVehicle) {
-        centerVehicle(selectedVehicle);
-      }
+      if (nextValue && vehicle) centerVehicle(vehicle);
       return nextValue;
     });
   };
@@ -362,44 +377,42 @@ export default function LiveFleetMap({
   };
 
   const openFullscreen = () => {
-    if (selectedVehicle) {
-      centerVehicle(selectedVehicle);
-    }
+    if (selectedVehicle) centerVehicle(selectedVehicle);
     setFullscreenOpen(true);
   };
 
-  const toolbar = (
-    <div className={`live-fleet-map-toolbar ${compact ? 'compact-toolbar' : ''}`}>
+  const controls = (
+    <div className={`live-fleet-map-toolbar tactical-map-toolbar ${compact ? 'compact-toolbar' : ''}`}>
       <div className="live-fleet-map-controls">
         {!compact && (
           <>
-            <button type="button" className="map-control-button" onClick={() => setZoomLevel((value) => Math.max(0.94, value - 0.06))}>
+            <button type="button" className="map-control-button" title="Zoom out" onClick={() => setZoomLevel((value) => Math.max(0.94, value - 0.06))}>
               <Minus size={16} />
             </button>
-            <button type="button" className="map-control-button" onClick={() => setZoomLevel((value) => Math.min(1.18, value + 0.06))}>
+            <button type="button" className="map-control-button" title="Zoom in" onClick={() => setZoomLevel((value) => Math.min(1.22, value + 0.06))}>
               <Plus size={16} />
             </button>
           </>
         )}
-        <button type="button" className={`map-control-button ${showTraffic ? 'active' : ''}`} onClick={() => setShowTraffic((value) => !value)}>
+        <button type="button" className={`map-control-button ${showTraffic ? 'active' : ''}`} title="Toggle route risk overlay" onClick={() => setShowTraffic((value) => !value)}>
           <Radar size={16} />
-          <span>Traffic</span>
+          <span>Risk</span>
         </button>
-        <button type="button" className={`map-control-button ${followSelected ? 'active' : ''}`} onClick={toggleFollowSelected}>
+        <button type="button" className={`map-control-button ${followSelected ? 'active' : ''}`} title="Follow selected vehicle" onClick={() => toggleFollowSelected()}>
           <LocateFixed size={16} />
           <span>Follow</span>
         </button>
-        <button type="button" className="map-control-button" onClick={toggleTheme}>
+        <button type="button" className="map-control-button" title="Toggle map theme" onClick={toggleTheme}>
           {mapTheme === 'light' ? <MoonStar size={16} /> : <SunMedium size={16} />}
-          <span>{mapTheme === 'light' ? 'Dark map' : 'Light map'}</span>
+          <span>{mapTheme === 'light' ? 'Dark' : 'Light'}</span>
         </button>
         {!compact && (
-          <button type="button" className="map-control-button" onClick={resetView}>
+          <button type="button" className="map-control-button" title="Reset map view" onClick={resetView}>
             <RotateCcw size={16} />
             <span>Reset</span>
           </button>
         )}
-        <button type="button" className="map-control-button" onClick={openFullscreen}>
+        <button type="button" className="map-control-button" title="Open fullscreen command map" onClick={openFullscreen}>
           <Maximize2 size={16} />
           <span>Fullscreen</span>
         </button>
@@ -431,29 +444,27 @@ export default function LiveFleetMap({
 
   return (
     <>
-      <div className={`live-fleet-map-card ${compact ? 'compact' : 'full'} map-theme-${mapTheme}`}>
-        <div className="live-fleet-map-header">
+      <div className={`live-fleet-map-card tactical-command-map ${compact ? 'compact' : 'full'} map-theme-${mapTheme}`}>
+        <div className="live-fleet-map-header tactical-map-header">
           <div>
             <h3>{title}</h3>
-            <p>{compact ? 'Compact live fleet snapshot.' : 'Western Cape fleet control view with route, traffic, and exception awareness.'}</p>
+            <p>{compact ? 'Live fleet snapshot.' : 'Mission board for active fleet movement, route risk, and tracker visibility.'}</p>
           </div>
           <div className="live-fleet-map-header-meta">
             <span className="live-badge">LIVE</span>
             <span className="live-timestamp">
-              Updated{' '}
               {selectedVehicle
-                ? new Date(selectedVehicle.lastUpdated || selectedVehicle.lastSeen).toLocaleTimeString('en-ZA', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
+                ? new Date(selectedVehicle.lastUpdated || selectedVehicle.lastSeen).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
                 : new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
         </div>
 
-        {shouldShowToolbar && toolbar}
+        {shouldShowToolbar && controls}
 
-        <div className="map-notification-badges">
+        <FleetHudBar vehicles={displayedVehicles} compact={compact} lastSync={selectedVehicle?.lastUpdated || selectedVehicle?.lastSeen} />
+
+        <div className="map-notification-badges tactical-alert-badges">
           {alertBadges.map((badge) => (
             <span key={badge.label} className={`map-notification-badge tone-${badge.tone}`}>
               {badge.label}
@@ -475,46 +486,49 @@ export default function LiveFleetMap({
           onSelectVehicle={handleSelectVehicle}
         />
 
+        {compact && <LiveEventTicker vehicles={displayedVehicles} scenarioKey={scenarioKey} compact maxItems={2} />}
+
         {showInlinePopup && selectedVehicle && (
           <div className={`live-fleet-map-popup ${compact ? 'compact' : ''}`}>
-            <VehicleLivePopup
+            <VehicleIntelPanel
               vehicle={selectedVehicle}
-              compact={compact}
+              compact
               onCenter={centerVehicle}
-              onCall={(vehicle) => setToast(`Calling ${vehicle.driverName}...`)}
+              onFollow={() => toggleFollowSelected(selectedVehicle)}
+              onCall={(vehicle) => setToast(`Calling ${vehicle.driverName}`)}
             />
           </div>
         )}
-
-        {!compact && <VehicleStatusLegend />}
 
         {toast && <div className="map-action-toast">{toast}</div>}
       </div>
 
       {fullscreenOpen && (
-        <div className="map-fullscreen-overlay">
-          <div className="map-fullscreen-shell">
-            <div className="map-fullscreen-topbar">
-              <div>
+        <div className="map-fullscreen-overlay tactical-fullscreen-overlay">
+          <div className="map-fullscreen-shell tactical-fullscreen-shell">
+            <div className="map-fullscreen-topbar tactical-fullscreen-topbar">
+              <div className="tactical-fullscreen-title">
+                <span>Command map</span>
                 <h2>Fleet Control Room</h2>
-                <p>Full-screen tracking view with fleet tray, live controls, and selected vehicle operations.</p>
               </div>
+              <FleetHudBar vehicles={displayedVehicles} lastSync={selectedVehicle?.lastUpdated || selectedVehicle?.lastSeen} />
               <div className="map-fullscreen-topbar-actions">
+                {scenario && <ScenarioBadge scenario={scenario} />}
                 <button type="button" className={`map-control-button ${showTraffic ? 'active' : ''}`} onClick={() => setShowTraffic((value) => !value)}>
                   <Radar size={16} />
-                  <span>Traffic</span>
+                  <span>Risk</span>
                 </button>
-                <button type="button" className={`map-control-button ${followSelected ? 'active' : ''}`} onClick={toggleFollowSelected}>
+                <button type="button" className={`map-control-button ${followSelected ? 'active' : ''}`} onClick={() => toggleFollowSelected()}>
                   <LocateFixed size={16} />
-                  <span>Follow selected</span>
+                  <span>Follow</span>
                 </button>
                 <button type="button" className="map-control-button" onClick={toggleTheme}>
                   {mapTheme === 'light' ? <MoonStar size={16} /> : <SunMedium size={16} />}
-                  <span>{mapTheme === 'light' ? 'Dark map' : 'Light map'}</span>
+                  <span>{mapTheme === 'light' ? 'Dark' : 'Light'}</span>
                 </button>
                 <button type="button" className="map-control-button" onClick={resetView}>
                   <RotateCcw size={16} />
-                  <span>Reset view</span>
+                  <span>Reset</span>
                 </button>
                 <label className="map-filter-select speed-select">
                   <span>Speed</span>
@@ -543,44 +557,12 @@ export default function LiveFleetMap({
               </div>
             </div>
 
-            <div className="map-fullscreen-layout">
-              <div className="map-fullscreen-list">
-                <div className="map-side-panel-header">
-                  <h3>Fleet tray</h3>
-                  <span>{displayedVehicles.length} vehicles</span>
-                </div>
-                <div className="vehicle-list enhanced">
-                  {displayedVehicles.map((vehicle) => (
-                    <button
-                      key={vehicle.vehicleId}
-                      type="button"
-                      className={`vehicle-item enhanced ${selectedVehicle?.vehicleId === vehicle.vehicleId ? 'selected' : ''}`}
-                      onClick={() => handleSelectVehicle(vehicle)}
-                    >
-                      <div className="vehicle-status-indicator">
-                        <span className="status-dot" style={{ backgroundColor: vehicle.statusColor }} />
-                      </div>
-                      <div className="vehicle-info">
-                        <span className="vehicle-reg">{vehicle.registration}</span>
-                        <span className="vehicle-driver">{`${vehicle.driverName} - ${vehicle.customerName}`}</span>
-                      </div>
-                      <div className="vehicle-data">
-                        <span className="status-text">{vehicle.status}</span>
-                        <span className="vehicle-speed">{vehicle.eta}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="map-fullscreen-layout tactical-fullscreen-layout">
+              <aside className="map-fullscreen-list tactical-fullscreen-list">
+                <FleetTray vehicles={displayedVehicles} selectedVehicleId={selectedVehicle?.vehicleId} onSelectVehicle={handleSelectVehicle} />
+              </aside>
 
-              <div className="map-fullscreen-map">
-                <div className="map-notification-badges fullscreen">
-                  {alertBadges.map((badge) => (
-                    <span key={`${badge.label}-fullscreen`} className={`map-notification-badge tone-${badge.tone}`}>
-                      {badge.label}
-                    </span>
-                  ))}
-                </div>
+              <main className="map-fullscreen-map tactical-fullscreen-map">
                 <MapCanvas
                   vehicles={displayedVehicles}
                   selectedVehicleId={selectedVehicle?.vehicleId}
@@ -594,17 +576,17 @@ export default function LiveFleetMap({
                   onHoverVehicle={setHoveredVehicleId}
                   onSelectVehicle={handleSelectVehicle}
                 />
-              </div>
+                <LiveEventTicker vehicles={displayedVehicles} scenarioKey={scenarioKey} maxItems={5} />
+              </main>
 
-              <div className="map-fullscreen-side">
-                {selectedVehicle && (
-                  <VehicleLivePopup
-                    vehicle={selectedVehicle}
-                    onCenter={centerVehicle}
-                    onCall={(vehicle) => setToast(`Calling ${vehicle.driverName}...`)}
-                  />
-                )}
-              </div>
+              <aside className="map-fullscreen-side tactical-fullscreen-side">
+                <VehicleIntelPanel
+                  vehicle={selectedVehicle}
+                  onCenter={centerVehicle}
+                  onFollow={() => toggleFollowSelected(selectedVehicle)}
+                  onCall={(vehicle) => setToast(`Calling ${vehicle.driverName}`)}
+                />
+              </aside>
             </div>
           </div>
         </div>

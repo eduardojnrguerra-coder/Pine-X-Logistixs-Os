@@ -616,6 +616,8 @@ export default function Dashboard() {
               compact
               showCompactToolbar
               onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
+              scenario={scenario}
+              scenarioKey={scenarioKey}
               title="Live Fleet Tracking"
             />
             <div className="compact-map-actions">

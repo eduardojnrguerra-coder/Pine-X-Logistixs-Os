@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Search } from 'lucide-react';
+import FleetTray from '../components/FleetTray';
 import IntegrationStatusBadge from '../components/IntegrationStatusBadge';
+import LiveEventTicker from '../components/LiveEventTicker';
 import LiveFleetMap from '../components/LiveFleetMap';
-import VehicleLivePopup from '../components/VehicleLivePopup';
 import ScenarioBadge from '../components/ScenarioBadge';
+import VehicleIntelPanel from '../components/VehicleIntelPanel';
 import { usePresenterMode } from '../context/PresenterModeContext';
 import { trackingService, TRACKING_MODES, TRACKING_PROVIDERS, providerLabels } from '../services/trackingService';
 
 export default function Tracking() {
-  const { data, scenario } = usePresenterMode();
+  const { data, scenario, scenarioKey } = usePresenterMode();
   const [provider, setProvider] = useState(trackingService.getProvider());
   const [mode, setMode] = useState(trackingService.getMode());
   const [selectedVehicleId, setSelectedVehicleId] = useState(data.liveVehicles[0]?.vehicleId || null);
@@ -71,11 +73,11 @@ export default function Tracking() {
   }, []);
 
   return (
-    <div className="page-container tracking-page">
-      <div className="page-header">
+    <div className="page-container tracking-page tactical-tracking-page">
+      <div className="page-header tracking-command-header">
         <div>
           <h1>Live Fleet Tracking</h1>
-          <p>Real-time simulated fleet map tied directly to the active presenter scenario.</p>
+          <p>Real-time command map tied directly to the active presenter scenario.</p>
         </div>
         <ScenarioBadge scenario={scenario} />
       </div>
@@ -86,7 +88,7 @@ export default function Tracking() {
           <p>
             {mode === TRACKING_MODES.LIVE
               ? `Live provider mode is selected for ${providerLabels[provider]}.`
-              : 'Demo mode is running the presenter-linked live fleet simulator.'}
+              : 'Demo mode is running normalized fleet telemetry for sales and operations demos.'}
           </p>
         </div>
         <div className="tracking-connection-meta">
@@ -127,6 +129,7 @@ export default function Tracking() {
             <option value="Offline">Offline</option>
             <option value="At Site">At Site</option>
             <option value="At Yard">At Yard</option>
+            <option value="Maintenance">Maintenance</option>
           </select>
           <select value={vehicleFilter} onChange={(event) => setVehicleFilter(event.target.value)}>
             {vehicleOptions.map((option) => (
@@ -160,45 +163,34 @@ export default function Tracking() {
         <div className="tracking-stat purple"><span className="stat-value">{summary.atYard}</span><span className="stat-label">At yard</span></div>
       </div>
 
-      <div className="tracking-grid-upgraded">
-        <div className="tracking-map-column">
+      <div className="tracking-grid-upgraded tactical-tracking-grid">
+        <div className="tracking-map-column tactical-tracking-map-column">
           <LiveFleetMap
             vehicles={filteredVehicles}
             selectedVehicleId={selectedVehicle?.vehicleId}
             onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
             showInlinePopup={false}
+            scenario={scenario}
+            scenarioKey={scenarioKey}
+            title="Tactical Fleet Command Map"
           />
+          <LiveEventTicker vehicles={filteredVehicles} scenarioKey={scenarioKey} maxItems={4} />
         </div>
-        <div className="tracking-sidebar-column">
+
+        <div className="tracking-sidebar-column tactical-tracking-sidebar">
           {selectedVehicle && (
             <div className="page-card route-history-card selected-vehicle-panel">
-              <div className="card-header"><h3>Selected vehicle</h3></div>
-              <VehicleLivePopup vehicle={selectedVehicle} />
+              <div className="card-header"><h3>Vehicle intelligence</h3></div>
+              <VehicleIntelPanel vehicle={selectedVehicle} />
             </div>
           )}
 
           <div className="page-card tracking-list-card tracking-vehicle-list-card">
-            <div className="card-header"><h3>Fleet list</h3><span className="vehicle-count">{filteredVehicles.length} vehicles</span></div>
-            <div className="vehicle-list enhanced">
-              {filteredVehicles.map((vehicle) => (
-                <button
-                  key={vehicle.vehicleId}
-                  type="button"
-                  className={`vehicle-item enhanced ${selectedVehicle?.vehicleId === vehicle.vehicleId ? 'selected' : ''}`}
-                  onClick={() => setSelectedVehicleId(vehicle.vehicleId)}
-                >
-                  <div className="vehicle-status-indicator"><span className="status-dot" style={{ backgroundColor: vehicle.statusColor }} /></div>
-                  <div className="vehicle-info">
-                    <span className="vehicle-reg">{vehicle.registration}</span>
-                    <span className="vehicle-driver">{`${vehicle.driverName} · ${vehicle.customerName}`}</span>
-                  </div>
-                  <div className="vehicle-data">
-                    <span className="status-text">{vehicle.status}</span>
-                    <span className="vehicle-speed">{vehicle.eta}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <FleetTray
+              vehicles={filteredVehicles}
+              selectedVehicleId={selectedVehicle?.vehicleId}
+              onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
+            />
           </div>
 
           {selectedVehicle && (

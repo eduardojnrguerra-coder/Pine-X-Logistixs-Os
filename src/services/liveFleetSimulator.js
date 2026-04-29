@@ -8,116 +8,211 @@ import {
 } from '../data/demoData';
 
 const LOCATION_POINTS = {
-  'Cape Town': { latitude: -33.9249, longitude: 18.4241, mapX: 9, mapY: 22, labelX: 7, labelY: 16 },
-  'Somerset West': { latitude: -34.0797, longitude: 18.8565, mapX: 27, mapY: 28, labelX: 24, labelY: 22 },
-  Hermanus: { latitude: -34.4187, longitude: 19.2345, mapX: 58, mapY: 54, labelX: 60, labelY: 48 },
-  Onrus: { latitude: -34.4231, longitude: 19.1761, mapX: 53, mapY: 58, labelX: 48, labelY: 63 },
-  Sandbaai: { latitude: -34.4265, longitude: 19.1524, mapX: 50, mapY: 61, labelX: 44, labelY: 66 },
-  Kleinmond: { latitude: -34.3388, longitude: 19.0248, mapX: 44, mapY: 46, labelX: 38, labelY: 43 },
-  "Betty's Bay": { latitude: -34.3597, longitude: 18.9084, mapX: 37, mapY: 50, labelX: 28, labelY: 55 },
-  Gansbaai: { latitude: -34.5806, longitude: 19.3519, mapX: 77, mapY: 67, labelX: 79, labelY: 62 },
-  Caledon: { latitude: -34.2299, longitude: 19.4265, mapX: 73, mapY: 36, labelX: 75, labelY: 31 },
-  Workshop: { latitude: -34.4142, longitude: 19.2366, mapX: 60, mapY: 58, labelX: 63, labelY: 63 },
-  Yard: { latitude: -34.4156, longitude: 19.2402, mapX: 61, mapY: 56, labelX: 64, labelY: 51 },
+  'Cape Town Depot': { latitude: -33.925, longitude: 18.424, mapX: 9, mapY: 22, labelX: 6.5, labelY: 15.5 },
+  'Cape Town': { latitude: -33.9249, longitude: 18.4241, mapX: 12, mapY: 25, labelX: 10.5, labelY: 30 },
+  'Somerset West': { latitude: -34.0797, longitude: 18.8565, mapX: 29, mapY: 34, labelX: 23.5, labelY: 29 },
+  Caledon: { latitude: -34.2299, longitude: 19.4265, mapX: 61, mapY: 38, labelX: 62, labelY: 33 },
+  Hermanus: { latitude: -34.4187, longitude: 19.2345, mapX: 62, mapY: 62, labelX: 63.5, labelY: 56 },
+  'Hermanus Yard': { latitude: -34.4156, longitude: 19.2402, mapX: 59, mapY: 58, labelX: 58, labelY: 53 },
+  Onrus: { latitude: -34.4231, longitude: 19.1761, mapX: 54, mapY: 64, labelX: 49, labelY: 69 },
+  Sandbaai: { latitude: -34.4265, longitude: 19.1524, mapX: 50, mapY: 67, labelX: 43.5, labelY: 72 },
+  Kleinmond: { latitude: -34.3388, longitude: 19.0248, mapX: 44, mapY: 52, labelX: 37, labelY: 49 },
+  "Betty's Bay": { latitude: -34.3597, longitude: 18.9084, mapX: 35, mapY: 58, labelX: 26, labelY: 62 },
+  Stanford: { latitude: -34.4395, longitude: 19.4556, mapX: 75, mapY: 61, labelX: 76, labelY: 56 },
+  Gansbaai: { latitude: -34.5806, longitude: 19.3519, mapX: 82, mapY: 74, labelX: 84, labelY: 69 },
+  'Maintenance Yard': { latitude: -34.4142, longitude: 19.2366, mapX: 58, mapY: 62, labelX: 61, labelY: 67 },
+  'HFC Site': { latitude: -34.407, longitude: 19.185, mapX: 57, mapY: 66, labelX: 58, labelY: 71 },
+  'Onrus Site': { latitude: -34.421, longitude: 19.18, mapX: 52, mapY: 62, labelX: 47, labelY: 58 },
 };
 
 const point = (name, overrides = {}) => ({
   name,
   ...LOCATION_POINTS[name],
-  zone: 'main',
+  speedZone: 'main',
   stop: false,
   ...overrides,
 });
 
 export const TRACKING_ROUTE_CORRIDORS = [
   {
-    id: 'route-hermanus-onrus',
-    name: 'Hermanus to Onrus',
+    id: 'route-cape-hermanus',
+    name: 'Cape Town Depot to Hermanus',
+    roadLabel: 'N2 / R43',
+    startDepot: 'Cape Town Depot',
+    pickupPoint: 'Somerset West',
+    dropoffPoint: 'Hermanus',
+    waypoints: ['Somerset West', 'Caledon'],
+    roadType: 'Main road',
+    riskZones: ['zone-caledon', 'zone-r43'],
+    distanceKm: 123,
+    etaMinutes: 108,
+    labelX: 39,
+    labelY: 36,
     points: [
-      point('Hermanus', { stop: true, zone: 'town' }),
-      point('Hermanus', { mapX: 56, mapY: 55, latitude: -34.4201, longitude: 19.218, zone: 'town' }),
-      point('Onrus', { stop: true, zone: 'town' }),
+      point('Cape Town Depot', { stop: true, speedZone: 'yard' }),
+      point('Cape Town', { mapX: 16, mapY: 27, latitude: -33.97, longitude: 18.54, speedZone: 'main' }),
+      point('Somerset West', { stop: true, speedZone: 'town' }),
+      point('Caledon', { mapX: 48, mapY: 36, latitude: -34.16, longitude: 19.12, speedZone: 'main' }),
+      point('Caledon', { stop: true, speedZone: 'town' }),
+      point('Hermanus', { mapX: 60, mapY: 52, latitude: -34.34, longitude: 19.26, speedZone: 'main' }),
+      point('Hermanus', { stop: true, speedZone: 'town' }),
     ],
   },
   {
-    id: 'route-hermanus-sandbaai',
-    name: 'Hermanus to Sandbaai',
+    id: 'route-yard-onrus-sandbaai',
+    name: 'Hermanus Yard to Sandbaai',
+    roadLabel: 'R43',
+    startDepot: 'Hermanus Yard',
+    pickupPoint: 'Hermanus Yard',
+    dropoffPoint: 'Sandbaai',
+    waypoints: ['Onrus'],
+    roadType: 'Town road',
+    riskZones: ['zone-onrus-site'],
+    distanceKm: 9,
+    etaMinutes: 24,
+    labelX: 54,
+    labelY: 63,
     points: [
-      point('Hermanus', { stop: true, zone: 'town' }),
-      point('Hermanus', { mapX: 55, mapY: 57, latitude: -34.4219, longitude: 19.205, zone: 'town' }),
-      point('Sandbaai', { stop: true, zone: 'town' }),
+      point('Hermanus Yard', { stop: true, speedZone: 'yard' }),
+      point('Onrus', { mapX: 56, mapY: 60, latitude: -34.421, longitude: 19.19, speedZone: 'town' }),
+      point('Onrus', { stop: true, speedZone: 'town' }),
+      point('Sandbaai', { stop: true, speedZone: 'town' }),
     ],
   },
   {
-    id: 'route-hermanus-kleinmond',
-    name: 'Hermanus to Kleinmond',
+    id: 'route-hermanus-kleinmond-bettys',
+    name: 'Hermanus to Bettys Bay',
+    roadLabel: 'R44',
+    startDepot: 'Hermanus Yard',
+    pickupPoint: 'Hermanus',
+    dropoffPoint: "Betty's Bay",
+    waypoints: ['Kleinmond'],
+    roadType: 'Coastal road',
+    riskZones: ['zone-kleinmond'],
+    distanceKm: 55,
+    etaMinutes: 62,
+    labelX: 45,
+    labelY: 51,
     points: [
-      point('Hermanus', { stop: true, zone: 'town' }),
-      point('Kleinmond', { mapX: 54, mapY: 50, latitude: -34.391, longitude: 19.154, zone: 'main' }),
-      point('Kleinmond', { mapX: 49, mapY: 47, latitude: -34.362, longitude: 19.086, zone: 'main' }),
-      point('Kleinmond', { stop: true, zone: 'town' }),
+      point('Hermanus', { stop: true, speedZone: 'town' }),
+      point('Kleinmond', { mapX: 55, mapY: 56, latitude: -34.39, longitude: 19.14, speedZone: 'main' }),
+      point('Kleinmond', { stop: true, speedZone: 'town' }),
+      point("Betty's Bay", { stop: true, speedZone: 'town' }),
     ],
   },
   {
     id: 'route-hermanus-gansbaai',
     name: 'Hermanus to Gansbaai',
+    roadLabel: 'R43',
+    startDepot: 'Hermanus Yard',
+    pickupPoint: 'Hermanus',
+    dropoffPoint: 'Gansbaai',
+    waypoints: ['Stanford'],
+    roadType: 'Main road',
+    riskZones: ['zone-gansbaai'],
+    distanceKm: 44,
+    etaMinutes: 52,
+    labelX: 72,
+    labelY: 65,
     points: [
-      point('Hermanus', { stop: true, zone: 'town' }),
-      point('Gansbaai', { mapX: 64, mapY: 58, latitude: -34.462, longitude: 19.28, zone: 'main' }),
-      point('Gansbaai', { mapX: 71, mapY: 63, latitude: -34.522, longitude: 19.323, zone: 'main' }),
-      point('Gansbaai', { stop: true, zone: 'town' }),
+      point('Hermanus', { stop: true, speedZone: 'town' }),
+      point('Stanford', { mapX: 70, mapY: 61, latitude: -34.43, longitude: 19.39, speedZone: 'main' }),
+      point('Stanford', { stop: true, speedZone: 'town' }),
+      point('Gansbaai', { stop: true, speedZone: 'town' }),
     ],
   },
   {
-    id: 'route-hermanus-caledon',
-    name: 'Hermanus to Caledon',
+    id: 'route-caledon-onrus',
+    name: 'Caledon to Onrus',
+    roadLabel: 'R320',
+    startDepot: 'Caledon',
+    pickupPoint: 'Caledon',
+    dropoffPoint: 'Onrus',
+    waypoints: ['Hermanus'],
+    roadType: 'Regional road',
+    riskZones: ['zone-r43'],
+    distanceKm: 48,
+    etaMinutes: 58,
+    labelX: 59,
+    labelY: 49,
     points: [
-      point('Hermanus', { stop: true, zone: 'town' }),
-      point('Caledon', { mapX: 63, mapY: 47, latitude: -34.355, longitude: 19.312, zone: 'main' }),
-      point('Caledon', { mapX: 69, mapY: 40, latitude: -34.287, longitude: 19.394, zone: 'main' }),
-      point('Caledon', { stop: true, zone: 'town' }),
+      point('Caledon', { stop: true, speedZone: 'town' }),
+      point('Hermanus', { mapX: 64, mapY: 47, latitude: -34.32, longitude: 19.35, speedZone: 'main' }),
+      point('Hermanus', { stop: true, speedZone: 'town' }),
+      point('Onrus', { stop: true, speedZone: 'town' }),
     ],
   },
   {
     id: 'route-somerset-cape',
     name: 'Somerset West to Cape Town',
+    roadLabel: 'N2',
+    startDepot: 'Somerset West',
+    pickupPoint: 'Somerset West',
+    dropoffPoint: 'Cape Town Depot',
+    waypoints: ['Cape Town'],
+    roadType: 'Main road',
+    riskZones: ['zone-n2'],
+    distanceKm: 48,
+    etaMinutes: 56,
+    labelX: 20,
+    labelY: 25,
     points: [
-      point('Somerset West', { stop: true, zone: 'town' }),
-      point('Somerset West', { mapX: 21, mapY: 26, latitude: -34.033, longitude: 18.756, zone: 'main' }),
-      point('Cape Town', { mapX: 14, mapY: 23, latitude: -33.975, longitude: 18.602, zone: 'main' }),
-      point('Cape Town', { stop: true, zone: 'town' }),
+      point('Somerset West', { stop: true, speedZone: 'town' }),
+      point('Cape Town', { mapX: 22, mapY: 29, latitude: -34.02, longitude: 18.72, speedZone: 'main' }),
+      point('Cape Town', { mapX: 15, mapY: 26, latitude: -33.97, longitude: 18.56, speedZone: 'main' }),
+      point('Cape Town Depot', { stop: true, speedZone: 'yard' }),
     ],
   },
   {
-    id: 'route-kleinmond-bettys',
-    name: "Kleinmond to Betty's Bay",
+    id: 'route-gansbaai-stanford-hermanus',
+    name: 'Gansbaai to Hermanus',
+    roadLabel: 'R316 / R43',
+    startDepot: 'Gansbaai',
+    pickupPoint: 'Gansbaai',
+    dropoffPoint: 'Hermanus',
+    waypoints: ['Stanford'],
+    roadType: 'Regional road',
+    riskZones: ['zone-gansbaai'],
+    distanceKm: 47,
+    etaMinutes: 54,
+    labelX: 72,
+    labelY: 58,
     points: [
-      point('Kleinmond', { stop: true, zone: 'town' }),
-      point("Betty's Bay", { mapX: 41, mapY: 48, latitude: -34.347, longitude: 18.968, zone: 'town' }),
-      point("Betty's Bay", { stop: true, zone: 'town' }),
+      point('Gansbaai', { stop: true, speedZone: 'town' }),
+      point('Stanford', { stop: true, speedZone: 'town' }),
+      point('Hermanus', { mapX: 68, mapY: 59, latitude: -34.41, longitude: 19.31, speedZone: 'main' }),
+      point('Hermanus', { stop: true, speedZone: 'town' }),
     ],
   },
 ];
 
-export const TRACKING_RISK_ZONES = [
-  { id: 'zone-kleinmond', label: 'Delay risk', mapX: 46, mapY: 48, radius: 5.8, severity: 'warning' },
-  { id: 'zone-gansbaai', label: 'Tracker blind spot', mapX: 72, mapY: 64, radius: 5.2, severity: 'danger' },
-  { id: 'zone-caledon', label: 'Fuel risk', mapX: 68, mapY: 42, radius: 4.8, severity: 'info' },
+export const TRACKING_GEOFENCES = [
+  { id: 'zone-cape-depot', label: 'Depot zone', type: 'depot', mapX: 9, mapY: 22, radius: 5.4, severity: 'info' },
+  { id: 'zone-hermanus-yard', label: 'Hermanus yard', type: 'depot', mapX: 59, mapY: 58, radius: 4.8, severity: 'info' },
+  { id: 'zone-maintenance-yard', label: 'Maintenance yard', type: 'maintenance', mapX: 58, mapY: 62, radius: 4.4, severity: 'warning' },
+  { id: 'zone-onrus-site', label: 'Customer site', type: 'site', mapX: 52, mapY: 62, radius: 4.2, severity: 'info' },
+  { id: 'zone-r43', label: 'Delay risk', type: 'risk', mapX: 63, mapY: 53, radius: 7.5, severity: 'danger' },
+  { id: 'zone-gansbaai', label: 'Tracker blind spot', type: 'signal', mapX: 79, mapY: 69, radius: 7.2, severity: 'danger' },
+  { id: 'zone-kleinmond', label: 'Coastal delay risk', type: 'risk', mapX: 45, mapY: 53, radius: 6.3, severity: 'warning' },
+  { id: 'zone-n2', label: 'N2 congestion', type: 'risk', mapX: 20, mapY: 28, radius: 6.6, severity: 'warning' },
+  { id: 'zone-caledon', label: 'Fuel risk', type: 'risk', mapX: 61, mapY: 38, radius: 5.2, severity: 'warning' },
 ];
 
+export const TRACKING_RISK_ZONES = TRACKING_GEOFENCES.filter((zone) => ['risk', 'signal', 'maintenance'].includes(zone.type));
+
 const VEHICLE_ROUTE_ASSIGNMENTS = {
-  V001: 'route-hermanus-onrus',
+  V001: 'route-cape-hermanus',
   V002: 'route-somerset-cape',
   V003: 'route-hermanus-gansbaai',
-  V004: 'route-hermanus-caledon',
-  V005: 'route-hermanus-sandbaai',
-  V006: 'route-hermanus-kleinmond',
-  V007: 'route-hermanus-sandbaai',
-  V008: 'route-kleinmond-bettys',
-  V009: 'route-hermanus-gansbaai',
+  V004: 'route-caledon-onrus',
+  V005: 'route-yard-onrus-sandbaai',
+  V006: 'route-hermanus-kleinmond-bettys',
+  V007: 'route-yard-onrus-sandbaai',
+  V008: 'route-hermanus-kleinmond-bettys',
+  V009: 'route-gansbaai-stanford-hermanus',
   V010: 'route-somerset-cape',
-  V011: 'route-hermanus-kleinmond',
-  V012: 'route-hermanus-onrus',
+  V011: 'route-cape-hermanus',
+  V012: 'route-caledon-onrus',
 };
 
 const STATUS_COLORS = {
@@ -174,6 +269,7 @@ const buildLiveAlerts = (state) => {
   if (state.status === 'Delayed') alerts.push({ label: 'DELAY RISK', tone: 'danger' });
   if (state.status === 'Offline' || state.trackerAlert) alerts.push({ label: 'TRACKER LOST', tone: 'neutral' });
   if (state.fuelLevel <= 25) alerts.push({ label: 'LOW FUEL', tone: 'warning' });
+  if (state.status === 'Maintenance') alerts.push({ label: 'MAINTENANCE', tone: 'warning' });
   return alerts.slice(0, 2);
 };
 
@@ -187,17 +283,7 @@ const buildVehicleInsights = (state) => {
           ? 'Ahead of schedule'
           : 'On time';
 
-  const insights = [
-    {
-      label: primaryInsight,
-      tone:
-        state.scheduleState === 'Delayed'
-          ? 'danger'
-          : state.scheduleState === 'At risk'
-            ? 'warning'
-            : 'success',
-    },
-  ];
+  const insights = [{ label: primaryInsight, tone: state.scheduleState === 'Delayed' ? 'danger' : state.scheduleState === 'At risk' ? 'warning' : 'success' }];
 
   if (state.idleMinutes >= 10) insights.push({ label: `Idle for ${state.idleMinutes} min`, tone: 'warning' });
   if (state.fuelLevel <= 25) insights.push({ label: 'Fuel level low', tone: 'warning' });
@@ -207,7 +293,14 @@ const buildVehicleInsights = (state) => {
   return insights.slice(0, 4);
 };
 
-const appendTrailPoint = (trail, point) => [...(trail || []).slice(-7), point];
+const appendTrailPoint = (trail, trailPoint) => [...(trail || []).slice(-10), trailPoint];
+
+const distanceToZone = (mapX, mapY, zone) => Math.hypot(mapX - zone.mapX, mapY - zone.mapY);
+
+const getZonesForPosition = (mapX, mapY) =>
+  TRACKING_GEOFENCES.filter((zone) => distanceToZone(mapX, mapY, zone) <= zone.radius).map((zone) => zone.id);
+
+const getZoneLabel = (zoneId) => TRACKING_GEOFENCES.find((zone) => zone.id === zoneId)?.label || 'operational zone';
 
 const createVehicleState = (vehicle, index) => {
   const route = getRouteById(VEHICLE_ROUTE_ASSIGNMENTS[vehicle.id]);
@@ -215,17 +308,16 @@ const createVehicleState = (vehicle, index) => {
   const driver = getDriverById(vehicle.driverId);
   const customer = job ? getCustomerById(job.customerId) : null;
   const maintenanceItem = MAINTENANCE.find((item) => item.vehicleId === vehicle.id && item.status !== 'Completed');
-  const trackerAlert = ALERTS.find(
-    (alert) => alert.vehicleId === vehicle.id && alert.type === 'Tracker Offline' && alert.status !== 'Resolved'
-  );
+  const trackerAlert = ALERTS.find((alert) => alert.vehicleId === vehicle.id && alert.type === 'Tracker Offline' && alert.status !== 'Resolved');
   const baseStatus = getVehicleBaseStatus(vehicle, job);
   const initialSegment = vehicle.status === 'Idle' ? 0 : clamp(index % (route.points.length - 1), 0, route.points.length - 2);
-  const initialProgress = baseStatus === 'On Route' || baseStatus === 'Delayed' ? 0.12 + (index % 3) * 0.18 : 0;
+  const initialProgress = baseStatus === 'On Route' || baseStatus === 'Delayed' ? 0.1 + (index % 4) * 0.16 : 0;
   const start = route.points[initialSegment];
   const end = route.points[initialSegment + 1] || start;
   const easedProgress = easeInOut(initialProgress);
   const baseMapX = lerp(start.mapX, end.mapX, easedProgress);
   const baseMapY = lerp(start.mapY, end.mapY, easedProgress);
+  const currentZones = getZonesForPosition(baseMapX, baseMapY);
 
   const state = {
     vehicleId: vehicle.id,
@@ -241,20 +333,13 @@ const createVehicleState = (vehicle, index) => {
     baseMapY,
     speed:
       baseStatus === 'On Route'
-        ? start.zone === 'town'
-          ? 34 + (index % 2) * 4
-          : 58 + (index % 3) * 7
+        ? start.speedZone === 'town'
+          ? 28 + (index % 3) * 5
+          : 56 + (index % 4) * 7
         : baseStatus === 'Delayed'
-          ? 18
+          ? 16
           : 0,
-    targetSpeed:
-      baseStatus === 'On Route'
-        ? start.zone === 'town'
-          ? 34 + (index % 2) * 4
-          : 58 + (index % 3) * 7
-        : baseStatus === 'Delayed'
-          ? 18
-          : 0,
+    targetSpeed: 0,
     heading: getHeading(start, end),
     ignitionStatus: baseStatus === 'At Yard' || baseStatus === 'Maintenance' || baseStatus === 'Offline' ? 'Off' : 'On',
     odometer: vehicle.odometer,
@@ -263,11 +348,16 @@ const createVehicleState = (vehicle, index) => {
     status: baseStatus,
     currentJobId: job?.id || null,
     driverId: driver?.id || null,
-    eta: baseStatus === 'Offline' ? 'Tracker offline' : baseStatus === 'Maintenance' ? 'Workshop' : '1h 05m',
+    driverStatus: driver?.status || 'On Duty',
+    eta: baseStatus === 'Offline' ? 'Tracker offline' : baseStatus === 'Maintenance' ? 'Workshop' : formatEta(route.etaMinutes),
     routeProgress: Math.round(((initialSegment + initialProgress) / Math.max(1, route.points.length - 1)) * 100),
     nextStop: end.name,
     routeId: route.id,
     routeName: route.name,
+    routeRoadLabel: route.roadLabel,
+    routeDistanceKm: route.distanceKm,
+    routeEtaMinutes: route.etaMinutes,
+    routeRiskZones: route.riskZones,
     routePoints: route.points,
     routeIndex: initialSegment,
     segmentProgress: initialProgress,
@@ -278,12 +368,16 @@ const createVehicleState = (vehicle, index) => {
     customerName: customer?.companyName || customer?.name || 'Internal movement',
     customerId: customer?.id || null,
     currentJobNumber: job?.jobNumber || 'No active job',
-    pickupLocation: job?.pickupLocation || route.points[0].name,
-    dropoffLocation: job?.dropoffLocation || route.points[route.points.length - 1].name,
+    pickupLocation: job?.pickupLocation || route.pickupPoint,
+    dropoffLocation: job?.dropoffLocation || route.dropoffPoint,
     cargo: job?.cargo || 'General cargo',
     priority: job?.priority || 'Medium',
     delayReason: job?.status === 'Delayed' ? job.notes || 'Traffic congestion on the corridor.' : '',
     maintenanceWarning: maintenanceItem ? `${maintenanceItem.title} is ${maintenanceItem.status.toLowerCase()}.` : '',
+    complianceWarning:
+      vehicle.licenceExpiry && new Date(vehicle.licenceExpiry) < new Date('2026-06-30')
+        ? `Licence expires ${vehicle.licenceExpiry}.`
+        : '',
     serviceDueKm: vehicle.serviceDueKm,
     openInvoiceValue: job?.price || 0,
     trackerAlert: trackerAlert?.message || '',
@@ -293,11 +387,22 @@ const createVehicleState = (vehicle, index) => {
     movementTrail: appendTrailPoint([], { mapX: baseMapX, mapY: baseMapY }),
     motionTick: index * 3,
     idleJitterSeed: index + 1,
+    zoneIds: currentZones,
+    zoneLabels: currentZones.map(getZoneLabel),
+    suggestedAction: '',
   };
 
   state.scheduleState = getScheduleState(state.status, state.routeProgress, state.speed);
   state.liveAlerts = buildLiveAlerts(state);
   state.insights = buildVehicleInsights(state);
+  state.suggestedAction =
+    state.status === 'Delayed'
+      ? 'Call driver and update customer ETA before escalation.'
+      : state.status === 'Offline'
+        ? 'Recover tracker visibility and verify position with the driver.'
+        : state.fuelLevel <= 25
+          ? 'Check fuel plan before next segment.'
+          : 'Monitor route and keep dispatch aligned.';
   state.routeHistory = [
     {
       label: 'Job created',
@@ -324,6 +429,52 @@ const getIdleJitter = (vehicle) => ({
   y: Math.cos((vehicle.motionTick + vehicle.idleJitterSeed) / 2.2) * 0.09,
 });
 
+const getTargetSpeed = ({ delayMode, approachingStop, speedZone }) => {
+  let targetSpeed;
+  if (delayMode) {
+    targetSpeed = 7 + Math.round(Math.random() * 18);
+  } else if (speedZone === 'yard') {
+    targetSpeed = 0;
+  } else if (speedZone === 'town') {
+    targetSpeed = 18 + Math.round(Math.random() * 24);
+  } else {
+    targetSpeed = 54 + Math.round(Math.random() * 32);
+  }
+
+  return approachingStop ? Math.max(6, targetSpeed - 24) : targetSpeed;
+};
+
+const buildStatusEvent = (vehicle) => {
+  if (vehicle.status === 'Delayed') {
+    return {
+      severity: 'danger',
+      message: `Delay risk detected on ${vehicle.routeRoadLabel || vehicle.routeName} for ${vehicle.registration}.`,
+    };
+  }
+  if (vehicle.status === 'Offline') {
+    return {
+      severity: 'neutral',
+      message: `Tracker signal lost for ${vehicle.vehicleName}.`,
+    };
+  }
+  if (vehicle.fuelLevel <= 22) {
+    return {
+      severity: 'warning',
+      message: `Low fuel warning on ${vehicle.registration}.`,
+    };
+  }
+  if (vehicle.status === 'At Site') {
+    return {
+      severity: 'info',
+      message: `${vehicle.vehicleName} stopped at ${vehicle.nextStop} site.`,
+    };
+  }
+  return {
+    severity: 'info',
+    message: `${vehicle.registration} entered ${vehicle.nextStop} corridor.`,
+  };
+};
+
 const advanceVehicle = (vehicle) => {
   const now = new Date().toISOString();
   const motionTick = vehicle.motionTick + 1;
@@ -331,20 +482,21 @@ const advanceVehicle = (vehicle) => {
   if (vehicle.status === 'Offline') {
     const offlineVehicle = {
       ...vehicle,
-      speed: Math.max(0, vehicle.speed - 8),
+      speed: 0,
       targetSpeed: 0,
       ignitionStatus: 'Off',
       eta: 'Tracker offline',
       scheduleState: 'Delayed',
       motionTick,
       liveAlerts: buildLiveAlerts(vehicle),
+      eventCandidate: Math.random() > 0.68 ? buildStatusEvent(vehicle) : null,
     };
     offlineVehicle.insights = buildVehicleInsights(offlineVehicle);
     return offlineVehicle;
   }
 
   if (vehicle.status === 'Maintenance') {
-    const workshop = LOCATION_POINTS.Workshop;
+    const workshop = LOCATION_POINTS['Maintenance Yard'];
     const maintenanceVehicle = {
       ...vehicle,
       baseMapX: workshop.mapX,
@@ -357,12 +509,15 @@ const advanceVehicle = (vehicle) => {
       targetSpeed: 0,
       ignitionStatus: 'Off',
       eta: 'Workshop',
-      nextStop: 'Workshop bay',
+      nextStop: 'Maintenance Yard',
       scheduleState: 'At risk',
       lastSeen: now,
       motionTick,
       movementTrail: appendTrailPoint(vehicle.movementTrail, { mapX: workshop.mapX, mapY: workshop.mapY }),
+      zoneIds: getZonesForPosition(workshop.mapX, workshop.mapY),
+      eventCandidate: Math.random() > 0.74 ? { severity: 'warning', message: `${vehicle.vehicleName} is held at maintenance yard.` } : null,
     };
+    maintenanceVehicle.zoneLabels = maintenanceVehicle.zoneIds.map(getZoneLabel);
     maintenanceVehicle.liveAlerts = buildLiveAlerts(maintenanceVehicle);
     maintenanceVehicle.insights = buildVehicleInsights(maintenanceVehicle);
     return maintenanceVehicle;
@@ -370,6 +525,9 @@ const advanceVehicle = (vehicle) => {
 
   if (vehicle.pauseTicks > 0) {
     const jitter = getIdleJitter({ ...vehicle, motionTick });
+    const mapX = vehicle.baseMapX + jitter.x;
+    const mapY = vehicle.baseMapY + jitter.y;
+    const currentZones = getZonesForPosition(mapX, mapY);
     const pausedVehicle = {
       ...vehicle,
       pauseTicks: vehicle.pauseTicks - 1,
@@ -381,9 +539,12 @@ const advanceVehicle = (vehicle) => {
       eta: formatEta(Math.max(8, Math.round((100 - vehicle.routeProgress) * 0.9))),
       lastSeen: now,
       motionTick,
-      mapX: vehicle.baseMapX + jitter.x,
-      mapY: vehicle.baseMapY + jitter.y,
-      movementTrail: appendTrailPoint(vehicle.movementTrail, { mapX: vehicle.baseMapX + jitter.x, mapY: vehicle.baseMapY + jitter.y }),
+      mapX,
+      mapY,
+      movementTrail: appendTrailPoint(vehicle.movementTrail, { mapX, mapY }),
+      zoneIds: currentZones,
+      zoneLabels: currentZones.map(getZoneLabel),
+      eventCandidate: Math.random() > 0.65 ? buildStatusEvent({ ...vehicle, status: 'At Site' }) : null,
     };
     pausedVehicle.scheduleState = getScheduleState(pausedVehicle.status, pausedVehicle.routeProgress, pausedVehicle.speed);
     pausedVehicle.liveAlerts = buildLiveAlerts(pausedVehicle);
@@ -397,23 +558,11 @@ const advanceVehicle = (vehicle) => {
   const end = routePoints[currentIndex + 1] || start;
   const approachingStop = end.stop && vehicle.segmentProgress > 0.68;
   const delayMode = vehicle.currentJobId === 'JOB-010' || vehicle.status === 'Delayed';
-  let targetSpeed;
-
-  if (delayMode) {
-    targetSpeed = 7 + Math.round(Math.random() * 18);
-  } else if (start.zone === 'town') {
-    targetSpeed = 24 + Math.round(Math.random() * 18);
-  } else {
-    targetSpeed = 56 + Math.round(Math.random() * 28);
-  }
-
-  if (approachingStop) {
-    targetSpeed = Math.max(8, targetSpeed - 22);
-  }
-
-  const acceleratedSpeed = clamp(vehicle.speed + clamp(targetSpeed - vehicle.speed, -9, 11), 0, 90);
+  const targetSpeed = getTargetSpeed({ delayMode, approachingStop, speedZone: start.speedZone });
+  const accelerationLimit = targetSpeed > vehicle.speed ? 8 : 10;
+  const acceleratedSpeed = clamp(vehicle.speed + clamp(targetSpeed - vehicle.speed, -accelerationLimit, accelerationLimit), 0, 90);
   const nextSegmentProgress = clamp(
-    vehicle.segmentProgress + ((acceleratedSpeed / 100) * 0.19 + 0.03) * simulatorSpeedMultiplier,
+    vehicle.segmentProgress + ((acceleratedSpeed / 100) * 0.17 + 0.026) * simulatorSpeedMultiplier,
     0,
     1
   );
@@ -426,7 +575,7 @@ const advanceVehicle = (vehicle) => {
   if (nextSegmentProgress >= 1 && currentIndex < routePoints.length - 2) {
     nextIndex = currentIndex + 1;
     segmentProgress = 0;
-    pauseTicks = routePoints[nextIndex].stop ? 1 + (routePoints[nextIndex].zone === 'town' ? 1 : 0) : 0;
+    pauseTicks = routePoints[nextIndex].stop ? 1 + (routePoints[nextIndex].speedZone === 'town' ? 1 : 0) : 0;
     status = pauseTicks > 0 ? 'At Site' : status;
   } else if (nextSegmentProgress >= 1 && currentIndex >= routePoints.length - 2) {
     segmentProgress = 1;
@@ -442,6 +591,8 @@ const advanceVehicle = (vehicle) => {
   const baseMapX = lerp(nextStart.mapX, nextEnd.mapX, easedProgress);
   const baseMapY = lerp(nextStart.mapY, nextEnd.mapY, easedProgress);
   const routeProgress = Math.round(((nextIndex + segmentProgress) / Math.max(1, routePoints.length - 1)) * 100);
+  const currentZones = getZonesForPosition(baseMapX, baseMapY);
+  const enteredZoneId = currentZones.find((zoneId) => !vehicle.zoneIds?.includes(zoneId));
 
   let speed = acceleratedSpeed;
   if (status === 'Delivered' || status === 'At Site' || status === 'At Yard') {
@@ -451,7 +602,7 @@ const advanceVehicle = (vehicle) => {
   const etaMinutes =
     status === 'Delivered'
       ? 0
-      : Math.max(6, Math.round(((100 - routeProgress) / 100) * (status === 'Delayed' ? 135 : 82) / simulatorSpeedMultiplier));
+      : Math.max(6, Math.round(((100 - routeProgress) / 100) * (status === 'Delayed' ? 135 : vehicle.routeEtaMinutes || 82) / simulatorSpeedMultiplier));
 
   const updated = {
     ...vehicle,
@@ -466,7 +617,7 @@ const advanceVehicle = (vehicle) => {
     heading: getHeading(nextStart, nextEnd),
     ignitionStatus: status === 'Delivered' ? 'Off' : status === 'At Yard' ? 'Off' : 'On',
     odometer: vehicle.odometer + Math.max(0, Math.round(speed / 7)),
-    fuelLevel: clamp(vehicle.fuelLevel - (speed > 0 ? 0.28 : 0.04), 8, 100),
+    fuelLevel: clamp(vehicle.fuelLevel - (speed > 0 ? 0.24 : 0.04), 8, 100),
     lastSeen: now,
     status,
     eta: status === 'Delivered' ? 'Delivered' : formatEta(etaMinutes),
@@ -480,11 +631,30 @@ const advanceVehicle = (vehicle) => {
     delayReason: status === 'Delayed' ? vehicle.delayReason || 'Traffic congestion and slow customer access.' : '',
     motionTick,
     movementTrail: appendTrailPoint(vehicle.movementTrail, { mapX: baseMapX, mapY: baseMapY }),
+    zoneIds: currentZones,
+    zoneLabels: currentZones.map(getZoneLabel),
   };
 
   updated.scheduleState = getScheduleState(updated.status, updated.routeProgress, updated.speed);
   updated.liveAlerts = buildLiveAlerts(updated);
   updated.insights = buildVehicleInsights(updated);
+  updated.suggestedAction =
+    updated.status === 'Delayed'
+      ? 'Call driver and update customer ETA before escalation.'
+      : updated.status === 'Offline'
+        ? 'Recover tracker visibility and verify position with driver.'
+        : updated.fuelLevel <= 25
+          ? 'Check fuel plan before the next route segment.'
+          : 'Continue monitoring route execution.';
+
+  const zoneEvent = enteredZoneId
+    ? {
+        severity: TRACKING_GEOFENCES.find((zone) => zone.id === enteredZoneId)?.severity || 'info',
+        message: `${updated.registration} entered ${getZoneLabel(enteredZoneId)}.`,
+      }
+    : null;
+  updated.eventCandidate = zoneEvent || (Math.random() > 0.74 ? buildStatusEvent(updated) : null);
+
   updated.routeHistory = [
     {
       label:
@@ -514,9 +684,18 @@ const advanceVehicle = (vehicle) => {
 class LiveFleetSimulator {
   constructor() {
     this.listeners = [];
+    this.eventListeners = [];
     this.intervalId = null;
     this.fleet = VEHICLES.filter((vehicle) => vehicle.trackerDeviceId).slice(0, 9).map(createVehicleState);
     this.lastUpdated = new Date().toISOString();
+    this.events = [
+      {
+        id: 'evt-initial-command-ready',
+        timestamp: this.lastUpdated,
+        severity: 'info',
+        message: 'Fleet command map synchronized with demo telemetry.',
+      },
+    ];
   }
 
   start() {
@@ -525,6 +704,7 @@ class LiveFleetSimulator {
     this.intervalId = setInterval(() => {
       this.fleet = this.fleet.map(advanceVehicle);
       this.lastUpdated = new Date().toISOString();
+      this.captureEvents();
       this.emit();
     }, 1400);
   }
@@ -538,6 +718,10 @@ class LiveFleetSimulator {
 
   setSpeedMultiplier(multiplier) {
     simulatorSpeedMultiplier = multiplier;
+    this.addEvent({
+      severity: 'info',
+      message: `Demo simulator speed changed to ${multiplier}x.`,
+    });
     this.emit();
   }
 
@@ -553,9 +737,49 @@ class LiveFleetSimulator {
     };
   }
 
+  subscribeEvents(listener) {
+    this.eventListeners.push(listener);
+    listener(this.getEvents());
+    return () => {
+      this.eventListeners = this.eventListeners.filter((entry) => entry !== listener);
+    };
+  }
+
+  addEvent(event) {
+    this.events = [
+      {
+        id: `evt-${Date.now()}-${Math.round(Math.random() * 10000)}`,
+        timestamp: new Date().toISOString(),
+        severity: event.severity || 'info',
+        message: event.message,
+      },
+      ...this.events,
+    ].slice(0, 16);
+    this.emitEvents();
+  }
+
+  captureEvents() {
+    const candidates = this.fleet
+      .map((vehicle) => vehicle.eventCandidate)
+      .filter(Boolean);
+
+    if (candidates.length > 0) {
+      this.addEvent(candidates[Math.floor(Math.random() * candidates.length)]);
+    }
+  }
+
   emit() {
     const snapshot = this.getFleet();
     this.listeners.forEach((listener) => listener(snapshot));
+  }
+
+  emitEvents() {
+    const snapshot = this.getEvents();
+    this.eventListeners.forEach((listener) => listener(snapshot));
+  }
+
+  getEvents() {
+    return [...this.events];
   }
 
   getFleet() {
@@ -589,4 +813,5 @@ export const liveFleetSimulator = new LiveFleetSimulator();
 export const getNormalizedFleetSnapshot = () => liveFleetSimulator.getFleet();
 export const getFleetSummary = () => liveFleetSimulator.getSummary();
 export const getFleetVehicle = (vehicleId) => liveFleetSimulator.getVehicle(vehicleId);
+export const getFleetEvents = () => liveFleetSimulator.getEvents();
 export const TRACKING_MAP_POINTS = LOCATION_POINTS;
