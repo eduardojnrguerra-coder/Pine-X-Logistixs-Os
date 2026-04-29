@@ -8864,3 +8864,236 @@ body {
     min-height: 58vh;
   }
 }
+
+.map-layer-toggles {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 8px 14px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.78);
+  background: rgba(2, 6, 23, 0.72);
+}
+
+.map-layer-toggles.compact {
+  padding: 7px 10px;
+}
+
+.map-layer-toggle {
+  border: 1px solid rgba(71, 85, 105, 0.78);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: rgba(15, 23, 42, 0.68);
+  color: rgba(203, 213, 225, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.map-layer-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(45, 212, 191, 0.52);
+}
+
+.map-layer-toggle.active {
+  background: rgba(20, 184, 166, 0.18);
+  border-color: rgba(45, 212, 191, 0.48);
+  color: #ccfbf1;
+}
+
+.map-fullscreen-layer-bar {
+  grid-column: 1 / -1;
+}
+
+.map-fullscreen-layer-bar .map-layer-toggles {
+  padding: 0;
+  border-bottom: 0;
+  background: transparent;
+}
+
+.tactical-map-svg.dark {
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.tactical-road-network path {
+  stroke: rgba(148, 163, 184, 0.2);
+  stroke-width: 0.34;
+}
+
+.route-corridor.inactive {
+  opacity: 0.28;
+}
+
+.route-corridor.active {
+  opacity: 1;
+}
+
+.fleet-route-line.tactical-route {
+  stroke: rgba(56, 189, 248, 0.44);
+  stroke-width: 1.15;
+  opacity: 0.68;
+}
+
+.fleet-route-line.tactical-route.traffic-on {
+  stroke: rgba(45, 212, 191, 0.5);
+}
+
+.route-corridor.active .fleet-route-line.tactical-route {
+  stroke: rgba(34, 197, 94, 0.98);
+  stroke-width: 2.5;
+  opacity: 0.96;
+}
+
+.selected-route-pending,
+.selected-route-completed {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.selected-route-pending {
+  stroke: rgba(148, 163, 184, 0.36);
+  stroke-width: 1.25;
+  stroke-dasharray: 1.4 1.6;
+}
+
+.selected-route-completed {
+  stroke: rgba(250, 204, 21, 0.82);
+  stroke-width: 1.65;
+  stroke-dasharray: 1.1 1.1;
+}
+
+.route-corridor-label,
+.road-context-label {
+  font-size: 1.25px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  fill: rgba(203, 213, 225, 0.42);
+}
+
+.road-context-label {
+  font-size: 1.38px;
+  fill: rgba(226, 232, 240, 0.5);
+}
+
+.road-context-label.risk {
+  fill: rgba(252, 165, 165, 0.68);
+}
+
+.fleet-route-direction-dot {
+  fill: rgba(125, 211, 252, 0.45);
+  animation: route-dot-pulse 2.4s ease-in-out infinite;
+}
+
+.fleet-route-direction-dot.active {
+  fill: rgba(187, 247, 208, 0.95);
+}
+
+.tactical-map-pin.pin-maintenance circle {
+  fill: #fb923c;
+}
+
+.tactical-map-pin.pin-fuel circle {
+  fill: #facc15;
+}
+
+.tactical-map-pin.pin-hub circle {
+  fill: #a78bfa;
+}
+
+.tactical-map-pin.pin-site circle {
+  fill: #fde047;
+}
+
+.tactical-map-pin.pin-depot circle {
+  fill: #38bdf8;
+}
+
+.tactical-place-label {
+  font-size: 1.42px;
+  paint-order: stroke;
+  stroke: rgba(2, 6, 23, 0.62);
+  stroke-width: 0.18px;
+}
+
+.tactical-vehicle-marker .fleet-marker-ring {
+  width: 34px;
+  height: 34px;
+  border-width: 2.2px;
+  box-shadow:
+    0 0 0 5px color-mix(in srgb, var(--marker-color) 18%, transparent),
+    0 16px 32px rgba(2, 6, 23, 0.36);
+}
+
+.tactical-vehicle-marker .fleet-marker-icon {
+  width: 29px;
+  height: 19px;
+  box-shadow:
+    0 12px 24px rgba(2, 6, 23, 0.4),
+    inset 6px 0 0 rgba(255, 255, 255, 0.18);
+}
+
+.tactical-vehicle-marker.live .fleet-marker-ring {
+  width: 36px;
+  height: 36px;
+}
+
+.tactical-vehicle-marker.selected .fleet-marker-ring {
+  width: 42px;
+  height: 42px;
+  border-width: 2.6px;
+  box-shadow:
+    0 0 0 7px color-mix(in srgb, var(--marker-color) 24%, transparent),
+    0 0 26px color-mix(in srgb, var(--marker-color) 42%, transparent),
+    0 18px 36px rgba(2, 6, 23, 0.46);
+}
+
+.tactical-vehicle-marker.selected .fleet-marker-icon {
+  width: 33px;
+  height: 22px;
+}
+
+.tactical-vehicle-marker.compact .fleet-marker-ring {
+  width: 28px;
+  height: 28px;
+}
+
+.tactical-vehicle-marker.compact .fleet-marker-icon {
+  width: 23px;
+  height: 15px;
+}
+
+.tactical-vehicle-marker.compact.selected .fleet-marker-ring {
+  width: 34px;
+  height: 34px;
+}
+
+.tactical-vehicle-marker.compact.selected .fleet-marker-icon {
+  width: 28px;
+  height: 18px;
+}
+
+@keyframes route-dot-pulse {
+  0%, 100% {
+    opacity: 0.34;
+    transform: scale(0.88);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+
+@media (max-width: 700px) {
+  .map-layer-toggles {
+    padding: 8px 10px;
+  }
+
+  .map-layer-toggle {
+    flex: 1 1 calc(50% - 8px);
+  }
+}

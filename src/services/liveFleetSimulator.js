@@ -8,21 +8,25 @@ import {
 } from '../data/demoData';
 
 const LOCATION_POINTS = {
-  'Cape Town Depot': { latitude: -33.925, longitude: 18.424, mapX: 9, mapY: 22, labelX: 6.5, labelY: 15.5 },
-  'Cape Town': { latitude: -33.9249, longitude: 18.4241, mapX: 12, mapY: 25, labelX: 10.5, labelY: 30 },
-  'Somerset West': { latitude: -34.0797, longitude: 18.8565, mapX: 29, mapY: 34, labelX: 23.5, labelY: 29 },
-  Caledon: { latitude: -34.2299, longitude: 19.4265, mapX: 61, mapY: 38, labelX: 62, labelY: 33 },
-  Hermanus: { latitude: -34.4187, longitude: 19.2345, mapX: 62, mapY: 62, labelX: 63.5, labelY: 56 },
-  'Hermanus Yard': { latitude: -34.4156, longitude: 19.2402, mapX: 59, mapY: 58, labelX: 58, labelY: 53 },
-  Onrus: { latitude: -34.4231, longitude: 19.1761, mapX: 54, mapY: 64, labelX: 49, labelY: 69 },
-  Sandbaai: { latitude: -34.4265, longitude: 19.1524, mapX: 50, mapY: 67, labelX: 43.5, labelY: 72 },
-  Kleinmond: { latitude: -34.3388, longitude: 19.0248, mapX: 44, mapY: 52, labelX: 37, labelY: 49 },
-  "Betty's Bay": { latitude: -34.3597, longitude: 18.9084, mapX: 35, mapY: 58, labelX: 26, labelY: 62 },
-  Stanford: { latitude: -34.4395, longitude: 19.4556, mapX: 75, mapY: 61, labelX: 76, labelY: 56 },
-  Gansbaai: { latitude: -34.5806, longitude: 19.3519, mapX: 82, mapY: 74, labelX: 84, labelY: 69 },
-  'Maintenance Yard': { latitude: -34.4142, longitude: 19.2366, mapX: 58, mapY: 62, labelX: 61, labelY: 67 },
-  'HFC Site': { latitude: -34.407, longitude: 19.185, mapX: 57, mapY: 66, labelX: 58, labelY: 71 },
-  'Onrus Site': { latitude: -34.421, longitude: 19.18, mapX: 52, mapY: 62, labelX: 47, labelY: 58 },
+  'Cape Town Depot': { latitude: -33.925, longitude: 18.424, mapX: 7, mapY: 19, labelX: 5.2, labelY: 13.5 },
+  'Cape Town': { latitude: -33.9249, longitude: 18.4241, mapX: 14, mapY: 25, labelX: 10.5, labelY: 31 },
+  'Somerset West': { latitude: -34.0797, longitude: 18.8565, mapX: 31, mapY: 39, labelX: 23.5, labelY: 35 },
+  Caledon: { latitude: -34.2299, longitude: 19.4265, mapX: 57, mapY: 31, labelX: 58, labelY: 25.5 },
+  'Caledon Hub': { latitude: -34.2299, longitude: 19.4265, mapX: 58, mapY: 30, labelX: 60.5, labelY: 28 },
+  Hermanus: { latitude: -34.4187, longitude: 19.2345, mapX: 61, mapY: 66, labelX: 63.5, labelY: 61 },
+  'Hermanus Yard': { latitude: -34.4156, longitude: 19.2402, mapX: 55, mapY: 68, labelX: 50, labelY: 63 },
+  Onrus: { latitude: -34.4231, longitude: 19.1761, mapX: 48, mapY: 72, labelX: 42.5, labelY: 77 },
+  Sandbaai: { latitude: -34.4265, longitude: 19.1524, mapX: 42, mapY: 76, labelX: 35.5, labelY: 82 },
+  Kleinmond: { latitude: -34.3388, longitude: 19.0248, mapX: 35, mapY: 58, labelX: 28, labelY: 53 },
+  "Betty's Bay": { latitude: -34.3597, longitude: 18.9084, mapX: 23, mapY: 68, labelX: 14, labelY: 72 },
+  Stanford: { latitude: -34.4395, longitude: 19.4556, mapX: 77, mapY: 58, labelX: 78.5, labelY: 52 },
+  Gansbaai: { latitude: -34.5806, longitude: 19.3519, mapX: 90, mapY: 80, labelX: 91, labelY: 73 },
+  'Gansbaai Site': { latitude: -34.585, longitude: 19.355, mapX: 91, mapY: 84, labelX: 83.5, labelY: 88 },
+  'Maintenance Yard': { latitude: -34.4142, longitude: 19.2366, mapX: 56, mapY: 76, labelX: 58, labelY: 82 },
+  'Customer Site': { latitude: -34.407, longitude: 19.185, mapX: 70, mapY: 70, labelX: 71, labelY: 76 },
+  'Fuel Stop': { latitude: -34.205, longitude: 19.12, mapX: 47, mapY: 38, labelX: 41, labelY: 34 },
+  'HFC Site': { latitude: -34.407, longitude: 19.185, mapX: 70, mapY: 70, labelX: 71, labelY: 76 },
+  'Onrus Site': { latitude: -34.421, longitude: 19.18, mapX: 47, mapY: 69, labelX: 40, labelY: 65 },
 };
 
 const point = (name, overrides = {}) => ({
@@ -46,15 +50,17 @@ export const TRACKING_ROUTE_CORRIDORS = [
     riskZones: ['zone-caledon', 'zone-r43'],
     distanceKm: 123,
     etaMinutes: 108,
-    labelX: 39,
-    labelY: 36,
+    corridorLabel: 'Main Corridor',
+    labelX: 37,
+    labelY: 32,
     points: [
       point('Cape Town Depot', { stop: true, speedZone: 'yard' }),
-      point('Cape Town', { mapX: 16, mapY: 27, latitude: -33.97, longitude: 18.54, speedZone: 'main' }),
+      point('Cape Town', { mapX: 16, mapY: 24, latitude: -33.97, longitude: 18.54, speedZone: 'main' }),
       point('Somerset West', { stop: true, speedZone: 'town' }),
-      point('Caledon', { mapX: 48, mapY: 36, latitude: -34.16, longitude: 19.12, speedZone: 'main' }),
+      point('Fuel Stop', { speedZone: 'main' }),
+      point('Caledon', { mapX: 55, mapY: 33, latitude: -34.16, longitude: 19.12, speedZone: 'main' }),
       point('Caledon', { stop: true, speedZone: 'town' }),
-      point('Hermanus', { mapX: 60, mapY: 52, latitude: -34.34, longitude: 19.26, speedZone: 'main' }),
+      point('Hermanus', { mapX: 63, mapY: 52, latitude: -34.34, longitude: 19.26, speedZone: 'main' }),
       point('Hermanus', { stop: true, speedZone: 'town' }),
     ],
   },
@@ -70,11 +76,12 @@ export const TRACKING_ROUTE_CORRIDORS = [
     riskZones: ['zone-onrus-site'],
     distanceKm: 9,
     etaMinutes: 24,
-    labelX: 54,
-    labelY: 63,
+    corridorLabel: 'Local Delivery Loop',
+    labelX: 48,
+    labelY: 68,
     points: [
       point('Hermanus Yard', { stop: true, speedZone: 'yard' }),
-      point('Onrus', { mapX: 56, mapY: 60, latitude: -34.421, longitude: 19.19, speedZone: 'town' }),
+      point('Onrus', { mapX: 51, mapY: 70, latitude: -34.421, longitude: 19.19, speedZone: 'town' }),
       point('Onrus', { stop: true, speedZone: 'town' }),
       point('Sandbaai', { stop: true, speedZone: 'town' }),
     ],
@@ -91,11 +98,12 @@ export const TRACKING_ROUTE_CORRIDORS = [
     riskZones: ['zone-kleinmond'],
     distanceKm: 55,
     etaMinutes: 62,
-    labelX: 45,
-    labelY: 51,
+    corridorLabel: 'Coastal Route',
+    labelX: 34,
+    labelY: 62,
     points: [
       point('Hermanus', { stop: true, speedZone: 'town' }),
-      point('Kleinmond', { mapX: 55, mapY: 56, latitude: -34.39, longitude: 19.14, speedZone: 'main' }),
+      point('Kleinmond', { mapX: 47, mapY: 61, latitude: -34.39, longitude: 19.14, speedZone: 'main' }),
       point('Kleinmond', { stop: true, speedZone: 'town' }),
       point("Betty's Bay", { stop: true, speedZone: 'town' }),
     ],
@@ -112,34 +120,37 @@ export const TRACKING_ROUTE_CORRIDORS = [
     riskZones: ['zone-gansbaai'],
     distanceKm: 44,
     etaMinutes: 52,
-    labelX: 72,
-    labelY: 65,
+    corridorLabel: 'R43 South Corridor',
+    labelX: 77,
+    labelY: 68,
     points: [
       point('Hermanus', { stop: true, speedZone: 'town' }),
-      point('Stanford', { mapX: 70, mapY: 61, latitude: -34.43, longitude: 19.39, speedZone: 'main' }),
+      point('Customer Site', { stop: true, speedZone: 'town' }),
+      point('Stanford', { mapX: 76, mapY: 61, latitude: -34.43, longitude: 19.39, speedZone: 'main' }),
       point('Stanford', { stop: true, speedZone: 'town' }),
-      point('Gansbaai', { stop: true, speedZone: 'town' }),
+      point('Gansbaai Site', { stop: true, speedZone: 'town' }),
     ],
   },
   {
-    id: 'route-caledon-onrus',
-    name: 'Caledon to Onrus',
-    roadLabel: 'R320',
+    id: 'route-caledon-stanford-gansbaai',
+    name: 'Caledon to Stanford and Gansbaai',
+    roadLabel: 'R316 / R320',
     startDepot: 'Caledon',
-    pickupPoint: 'Caledon',
-    dropoffPoint: 'Onrus',
-    waypoints: ['Hermanus'],
+    pickupPoint: 'Caledon Hub',
+    dropoffPoint: 'Gansbaai Site',
+    waypoints: ['Stanford'],
     roadType: 'Regional road',
-    riskZones: ['zone-r43'],
-    distanceKm: 48,
-    etaMinutes: 58,
-    labelX: 59,
-    labelY: 49,
+    riskZones: ['zone-caledon', 'zone-gansbaai'],
+    distanceKm: 71,
+    etaMinutes: 84,
+    corridorLabel: 'R316 Rural Route',
+    labelX: 69,
+    labelY: 43,
     points: [
-      point('Caledon', { stop: true, speedZone: 'town' }),
-      point('Hermanus', { mapX: 64, mapY: 47, latitude: -34.32, longitude: 19.35, speedZone: 'main' }),
-      point('Hermanus', { stop: true, speedZone: 'town' }),
-      point('Onrus', { stop: true, speedZone: 'town' }),
+      point('Caledon Hub', { stop: true, speedZone: 'town' }),
+      point('Stanford', { mapX: 70, mapY: 47, latitude: -34.33, longitude: 19.46, speedZone: 'main' }),
+      point('Stanford', { stop: true, speedZone: 'town' }),
+      point('Gansbaai Site', { stop: true, speedZone: 'town' }),
     ],
   },
   {
@@ -154,12 +165,13 @@ export const TRACKING_ROUTE_CORRIDORS = [
     riskZones: ['zone-n2'],
     distanceKm: 48,
     etaMinutes: 56,
-    labelX: 20,
+    corridorLabel: 'N2 Return Corridor',
+    labelX: 19,
     labelY: 25,
     points: [
       point('Somerset West', { stop: true, speedZone: 'town' }),
-      point('Cape Town', { mapX: 22, mapY: 29, latitude: -34.02, longitude: 18.72, speedZone: 'main' }),
-      point('Cape Town', { mapX: 15, mapY: 26, latitude: -33.97, longitude: 18.56, speedZone: 'main' }),
+      point('Cape Town', { mapX: 23, mapY: 30, latitude: -34.02, longitude: 18.72, speedZone: 'main' }),
+      point('Cape Town', { mapX: 14, mapY: 25, latitude: -33.97, longitude: 18.56, speedZone: 'main' }),
       point('Cape Town Depot', { stop: true, speedZone: 'yard' }),
     ],
   },
@@ -175,27 +187,29 @@ export const TRACKING_ROUTE_CORRIDORS = [
     riskZones: ['zone-gansbaai'],
     distanceKm: 47,
     etaMinutes: 54,
-    labelX: 72,
-    labelY: 58,
+    corridorLabel: 'R43 Return Route',
+    labelX: 80,
+    labelY: 57,
     points: [
-      point('Gansbaai', { stop: true, speedZone: 'town' }),
+      point('Gansbaai Site', { stop: true, speedZone: 'town' }),
       point('Stanford', { stop: true, speedZone: 'town' }),
-      point('Hermanus', { mapX: 68, mapY: 59, latitude: -34.41, longitude: 19.31, speedZone: 'main' }),
+      point('Customer Site', { speedZone: 'town' }),
+      point('Hermanus', { mapX: 66, mapY: 63, latitude: -34.41, longitude: 19.31, speedZone: 'main' }),
       point('Hermanus', { stop: true, speedZone: 'town' }),
     ],
   },
 ];
 
 export const TRACKING_GEOFENCES = [
-  { id: 'zone-cape-depot', label: 'Depot zone', type: 'depot', mapX: 9, mapY: 22, radius: 5.4, severity: 'info' },
-  { id: 'zone-hermanus-yard', label: 'Hermanus yard', type: 'depot', mapX: 59, mapY: 58, radius: 4.8, severity: 'info' },
-  { id: 'zone-maintenance-yard', label: 'Maintenance yard', type: 'maintenance', mapX: 58, mapY: 62, radius: 4.4, severity: 'warning' },
-  { id: 'zone-onrus-site', label: 'Customer site', type: 'site', mapX: 52, mapY: 62, radius: 4.2, severity: 'info' },
-  { id: 'zone-r43', label: 'Delay risk', type: 'risk', mapX: 63, mapY: 53, radius: 7.5, severity: 'danger' },
-  { id: 'zone-gansbaai', label: 'Tracker blind spot', type: 'signal', mapX: 79, mapY: 69, radius: 7.2, severity: 'danger' },
-  { id: 'zone-kleinmond', label: 'Coastal delay risk', type: 'risk', mapX: 45, mapY: 53, radius: 6.3, severity: 'warning' },
+  { id: 'zone-cape-depot', label: 'Depot zone', type: 'depot', mapX: 7, mapY: 19, radius: 5.4, severity: 'info' },
+  { id: 'zone-hermanus-yard', label: 'Hermanus yard', type: 'depot', mapX: 55, mapY: 68, radius: 4.8, severity: 'info' },
+  { id: 'zone-maintenance-yard', label: 'Maintenance yard', type: 'maintenance', mapX: 56, mapY: 76, radius: 4.4, severity: 'warning' },
+  { id: 'zone-onrus-site', label: 'Customer site', type: 'site', mapX: 70, mapY: 70, radius: 4.2, severity: 'info' },
+  { id: 'zone-r43', label: 'High risk delay zone', type: 'risk', mapX: 67, mapY: 56, radius: 7.5, severity: 'danger' },
+  { id: 'zone-gansbaai', label: 'Tracker blind spot', type: 'signal', mapX: 88, mapY: 80, radius: 7.2, severity: 'danger' },
+  { id: 'zone-kleinmond', label: 'Coastal delay risk', type: 'risk', mapX: 34, mapY: 60, radius: 6.3, severity: 'warning' },
   { id: 'zone-n2', label: 'N2 congestion', type: 'risk', mapX: 20, mapY: 28, radius: 6.6, severity: 'warning' },
-  { id: 'zone-caledon', label: 'Fuel risk', type: 'risk', mapX: 61, mapY: 38, radius: 5.2, severity: 'warning' },
+  { id: 'zone-caledon', label: 'Fuel risk', type: 'risk', mapX: 48, mapY: 38, radius: 5.2, severity: 'warning' },
 ];
 
 export const TRACKING_RISK_ZONES = TRACKING_GEOFENCES.filter((zone) => ['risk', 'signal', 'maintenance'].includes(zone.type));
@@ -204,7 +218,7 @@ const VEHICLE_ROUTE_ASSIGNMENTS = {
   V001: 'route-cape-hermanus',
   V002: 'route-somerset-cape',
   V003: 'route-hermanus-gansbaai',
-  V004: 'route-caledon-onrus',
+  V004: 'route-caledon-stanford-gansbaai',
   V005: 'route-yard-onrus-sandbaai',
   V006: 'route-hermanus-kleinmond-bettys',
   V007: 'route-yard-onrus-sandbaai',
@@ -212,7 +226,22 @@ const VEHICLE_ROUTE_ASSIGNMENTS = {
   V009: 'route-gansbaai-stanford-hermanus',
   V010: 'route-somerset-cape',
   V011: 'route-cape-hermanus',
-  V012: 'route-caledon-onrus',
+  V012: 'route-caledon-stanford-gansbaai',
+};
+
+const VEHICLE_ROUTE_STARTS = {
+  V001: { segment: 1, progress: 0.42 },
+  V002: { segment: 0, progress: 0.68 },
+  V003: { segment: 2, progress: 0.18 },
+  V004: { segment: 0, progress: 0.54 },
+  V005: { segment: 1, progress: 0.24 },
+  V006: { segment: 1, progress: 0.62 },
+  V007: { segment: 2, progress: 0.12 },
+  V008: { segment: 2, progress: 0.42 },
+  V009: { segment: 0, progress: 0.36 },
+  V010: { segment: 1, progress: 0.22 },
+  V011: { segment: 3, progress: 0.52 },
+  V012: { segment: 1, progress: 0.58 },
 };
 
 const STATUS_COLORS = {
@@ -310,8 +339,15 @@ const createVehicleState = (vehicle, index) => {
   const maintenanceItem = MAINTENANCE.find((item) => item.vehicleId === vehicle.id && item.status !== 'Completed');
   const trackerAlert = ALERTS.find((alert) => alert.vehicleId === vehicle.id && alert.type === 'Tracker Offline' && alert.status !== 'Resolved');
   const baseStatus = getVehicleBaseStatus(vehicle, job);
-  const initialSegment = vehicle.status === 'Idle' ? 0 : clamp(index % (route.points.length - 1), 0, route.points.length - 2);
-  const initialProgress = baseStatus === 'On Route' || baseStatus === 'Delayed' ? 0.1 + (index % 4) * 0.16 : 0;
+  const routeStart = VEHICLE_ROUTE_STARTS[vehicle.id] || {};
+  const initialSegment =
+    vehicle.status === 'Idle'
+      ? 0
+      : clamp(routeStart.segment ?? index % (route.points.length - 1), 0, route.points.length - 2);
+  const initialProgress =
+    baseStatus === 'On Route' || baseStatus === 'Delayed'
+      ? clamp(routeStart.progress ?? 0.1 + (index % 4) * 0.16, 0.05, 0.86)
+      : 0;
   const start = route.points[initialSegment];
   const end = route.points[initialSegment + 1] || start;
   const easedProgress = easeInOut(initialProgress);

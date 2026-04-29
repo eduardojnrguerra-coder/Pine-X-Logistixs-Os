@@ -25,11 +25,36 @@ import {
 } from '../services/liveFleetSimulator';
 
 const COAST_PATH =
-  'M 0 0 L 0 100 L 21 100 C 25 91, 27 84, 31 77 C 36 68, 42 64, 50 59 C 58 54, 63 47, 68 39 C 74 29, 83 18, 92 9 C 96 5, 99 3, 100 2 L 100 0 Z';
+  'M 0 78 C 10 74, 20 69, 31 67 C 44 65, 53 70, 62 69 C 73 67, 82 71, 91 79 C 96 84, 99 90, 100 100 L 0 100 Z';
 const TERRAIN_PATH =
-  'M 14 18 C 26 12, 42 16, 53 25 C 65 35, 73 36, 84 31 L 93 43 C 82 49, 76 55, 76 66 C 65 72, 53 74, 41 68 C 28 62, 20 52, 12 42 Z';
+  'M 9 12 C 23 6, 42 9, 54 18 C 68 28, 78 28, 92 24 L 96 48 C 83 53, 78 60, 77 70 C 65 75, 52 75, 42 69 C 29 62, 18 50, 9 35 Z';
 const STATUS_FILTERS = ['All', 'On Route', 'Delayed', 'Offline', 'At Site', 'At Yard', 'Maintenance'];
 const SPEED_OPTIONS = [0.75, 1, 1.5, 2];
+const MAP_LAYER_OPTIONS = [
+  { key: 'routes', label: 'Routes' },
+  { key: 'alerts', label: 'Alerts' },
+  { key: 'depots', label: 'Depots' },
+  { key: 'geofences', label: 'Geofences' },
+  { key: 'risk', label: 'Traffic/Risk' },
+];
+const DEFAULT_MAP_LAYERS = {
+  routes: true,
+  alerts: true,
+  depots: true,
+  geofences: true,
+  risk: true,
+};
+const ROAD_LABELS = [
+  { label: 'N2', x: 21, y: 31 },
+  { label: 'R43', x: 67, y: 61 },
+  { label: 'R44', x: 32, y: 64 },
+  { label: 'R316', x: 77, y: 48 },
+  { label: 'R320', x: 57, y: 43 },
+  { label: 'Main Corridor', x: 36, y: 35 },
+  { label: 'Coastal Route', x: 28, y: 58 },
+  { label: 'High Risk Delay Zone', x: 69, y: 51, tone: 'risk' },
+];
+const HIDDEN_MAP_POINT_ALIASES = new Set(['HFC Site', 'Onrus Site']);
 
 const buildPath = (points) => {
   if (!points || points.length < 2) return '';
@@ -83,9 +108,31 @@ const getThemePalette = (theme) =>
       };
 
 const getPinType = (name) => {
+  if (name.includes('Fuel')) return 'fuel';
+  if (name.includes('Maintenance')) return 'maintenance';
+  if (name.includes('Hub')) return 'hub';
   if (name.includes('Depot') || name.includes('Yard')) return 'depot';
   if (name.includes('Site')) return 'site';
   return 'town';
+};
+
+const isOperationalPin = (pinType) => ['depot', 'site', 'maintenance', 'fuel', 'hub'].includes(pinType);
+
+const getRouteProgressSegments = (route, vehicle) => {
+  if (!vehicle || vehicle.routeId !== route.id) return null;
+  const currentIndex = Math.max(0, Math.min(vehicle.routeIndex || 0, route.points.length - 2));
+  const livePoint = {
+    name: 'Live position',
+    mapX: vehicle.mapX,
+    mapY: vehicle.mapY,
+  };
+  const completedPoints = [...route.points.slice(0, currentIndex + 1), livePoint];
+  const pendingPoints = [livePoint, ...route.points.slice(currentIndex + 1)];
+
+  return {
+    completedPath: buildPath(completedPoints),
+    pendingPath: buildPath(pendingPoints),
+  };
 };
 
 function MapCanvas({
@@ -98,6 +145,7 @@ function MapCanvas({
   panOffset,
   hoveredVehicleId,
   mapTheme,
+  visibleLayers,
   onHoverVehicle,
   onSelectVehicle,
 }) {
@@ -138,55 +186,75 @@ function MapCanvas({
           <path d={COAST_PATH} fill={`url(#tacticalWater-${mapTheme})`} opacity="0.96" />
           <path d={TERRAIN_PATH} fill={palette.terrain} opacity="0.72" />
 
-          <g className="tactical-road-network">
-            <path d="M 8 22 C 19 27, 31 33, 44 36 C 51 38, 57 39, 63 38" />
-            <path d="M 63 38 C 63 46, 62 54, 62 62" />
-            <path d="M 62 62 C 55 60, 48 57, 44 52 C 40 55, 36 57, 35 58" />
-            <path d="M 62 62 C 68 61, 75 64, 82 74" />
-            <path d="M 61 38 C 70 42, 74 51, 75 61" />
-            <path d="M 10 25 C 16 28, 22 30, 29 34" />
-          </g>
-
-          {TRACKING_GEOFENCES.map((zone) => (
-            <g key={zone.id} className={`tactical-geofence type-${zone.type} severity-${zone.severity}`}>
-              <circle cx={zone.mapX} cy={zone.mapY} r={zone.radius} />
-              {!compact && (
-                <text x={zone.mapX} y={zone.mapY - zone.radius - 1.1} className="tactical-geofence-label">
-                  {zone.label}
-                </text>
-              )}
+          {visibleLayers.routes && (
+            <g className="tactical-road-network">
+              <path d="M 6 18 C 18 24, 29 32, 43 35 C 50 37, 55 34, 61 31" />
+              <path d="M 61 31 C 63 42, 65 52, 62 66" />
+              <path d="M 62 66 C 54 69, 48 73, 42 76" />
+              <path d="M 62 66 C 70 65, 78 68, 91 84" />
+              <path d="M 57 31 C 66 39, 73 48, 91 84" />
+              <path d="M 31 39 C 24 48, 20 58, 23 68" />
             </g>
-          ))}
+          )}
 
-          {TRACKING_ROUTE_CORRIDORS.map((route) => {
-            const active = selectedVehicle?.routeId === route.id;
-            return (
-              <g key={route.id} className={`route-corridor ${active ? 'active' : 'inactive'}`} filter={active ? 'url(#activeCorridorGlow)' : 'url(#corridorGlow)'}>
-                <path d={buildPath(route.points)} className={`fleet-route-line tactical-route ${showTraffic ? 'traffic-on' : ''}`} />
-                <path d={buildPath(route.points)} className="tactical-route-core" />
-                {getDirectionMarkers(route.points, active).map((marker) => (
-                  <polygon
-                    key={marker.key}
-                    points="-0.65,-0.42 0.7,0 -0.65,0.42"
-                    className={`fleet-route-arrow ${active ? 'active' : ''}`}
-                    transform={`translate(${marker.mapX} ${marker.mapY}) rotate(${marker.heading})`}
-                  />
-                ))}
+          {visibleLayers.geofences &&
+            TRACKING_GEOFENCES.filter((zone) => visibleLayers.risk || !['risk', 'signal'].includes(zone.type)).map((zone) => (
+              <g key={zone.id} className={`tactical-geofence type-${zone.type} severity-${zone.severity}`}>
+                <circle cx={zone.mapX} cy={zone.mapY} r={zone.radius} />
                 {!compact && (
-                  <text x={route.labelX} y={route.labelY} className="route-road-label">
-                    {route.roadLabel}
+                  <text x={zone.mapX} y={zone.mapY - zone.radius - 1.1} className="tactical-geofence-label">
+                    {zone.label}
                   </text>
                 )}
               </g>
-            );
-          })}
+            ))}
+
+          {visibleLayers.routes &&
+            TRACKING_ROUTE_CORRIDORS.map((route) => {
+              const active = selectedVehicle?.routeId === route.id;
+              const segments = getRouteProgressSegments(route, selectedVehicle);
+              return (
+                <g key={route.id} className={`route-corridor ${active ? 'active' : 'inactive'}`} filter={active ? 'url(#activeCorridorGlow)' : 'url(#corridorGlow)'}>
+                  <path d={buildPath(route.points)} className={`fleet-route-line tactical-route ${showTraffic && visibleLayers.risk ? 'traffic-on' : ''}`} />
+                  <path d={buildPath(route.points)} className="tactical-route-core" />
+                  {active && segments?.pendingPath && <path d={segments.pendingPath} className="selected-route-pending" />}
+                  {active && segments?.completedPath && <path d={segments.completedPath} className="selected-route-completed" />}
+                  {getDirectionMarkers(route.points, active).map((marker) => (
+                    <g key={marker.key} transform={`translate(${marker.mapX} ${marker.mapY}) rotate(${marker.heading})`}>
+                      <polygon points="-0.65,-0.42 0.7,0 -0.65,0.42" className={`fleet-route-arrow ${active ? 'active' : ''}`} />
+                      <circle cx="-1.55" cy="0" r="0.28" className={`fleet-route-direction-dot ${active ? 'active' : ''}`} />
+                    </g>
+                  ))}
+                  {!compact && (
+                    <>
+                      <text x={route.labelX} y={route.labelY} className="route-road-label">
+                        {route.roadLabel}
+                      </text>
+                      <text x={route.labelX} y={route.labelY + 2.2} className="route-corridor-label">
+                        {route.corridorLabel}
+                      </text>
+                    </>
+                  )}
+                </g>
+              );
+            })}
+
+          {visibleLayers.routes &&
+            !compact &&
+            ROAD_LABELS.filter((label) => visibleLayers.risk || label.tone !== 'risk').map((label) => (
+              <text key={label.label} x={label.x} y={label.y} className={`road-context-label ${label.tone === 'risk' ? 'risk' : ''}`}>
+                {label.label}
+              </text>
+            ))}
 
           {Object.entries(TRACKING_MAP_POINTS).map(([name, point]) => {
+            if (HIDDEN_MAP_POINT_ALIASES.has(name)) return null;
             const pinType = getPinType(name);
-            const showLabel = !compact && !['HFC Site', 'Onrus Site'].includes(name);
+            if (isOperationalPin(pinType) && !visibleLayers.depots) return null;
+            const showLabel = !compact && (visibleLayers.depots || !isOperationalPin(pinType));
             return (
               <g key={name} className={`tactical-map-pin pin-${pinType}`}>
-                <circle cx={point.mapX} cy={point.mapY} r={pinType === 'town' ? 0.55 : 0.8} />
+                <circle cx={point.mapX} cy={point.mapY} r={pinType === 'town' ? 0.55 : 0.95} />
                 {showLabel && (
                   <text
                     x={point.labelX || point.mapX + 1}
@@ -215,18 +283,19 @@ function MapCanvas({
                   className={`fleet-trail-line ${vehicle.status === 'Offline' ? 'offline' : ''}`}
                 />
               </svg>
-              {vehicle.liveAlerts?.slice(0, compact ? 1 : 2).map((alert, alertIndex) => (
-                <div
-                  key={`${vehicle.vehicleId}-${alert.label}-${alertIndex}`}
-                  className={`map-alert-pill tone-${alert.tone || 'warning'}`}
-                  style={{
-                    left: `${vehicle.mapX + 1.8}%`,
-                    top: `${vehicle.mapY - 5.8 - alertIndex * 4.4}%`,
-                  }}
-                >
-                  {alert.label}
-                </div>
-              ))}
+              {visibleLayers.alerts &&
+                vehicle.liveAlerts?.slice(0, compact ? 1 : 2).map((alert, alertIndex) => (
+                  <div
+                    key={`${vehicle.vehicleId}-${alert.label}-${alertIndex}`}
+                    className={`map-alert-pill tone-${alert.tone || 'warning'}`}
+                    style={{
+                      left: `${vehicle.mapX + 1.8}%`,
+                      top: `${vehicle.mapY - 5.8 - alertIndex * 4.4}%`,
+                    }}
+                  >
+                    {alert.label}
+                  </div>
+                ))}
               <button
                 type="button"
                 className={`fleet-marker tactical-vehicle-marker ${isSelected ? 'selected' : ''} ${compact ? 'compact' : ''} ${
@@ -283,6 +352,7 @@ export default function LiveFleetMap({
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [toast, setToast] = useState('');
   const [mapTheme, setMapTheme] = useState('dark');
+  const [visibleLayers, setVisibleLayers] = useState(DEFAULT_MAP_LAYERS);
   const [speedMultiplier, setSpeedMultiplier] = useState(() => liveFleetSimulator.getSpeedMultiplier());
 
   const displayedVehicles = useMemo(() => {
@@ -378,10 +448,39 @@ export default function LiveFleetMap({
     setMapTheme((value) => (value === 'light' ? 'dark' : 'light'));
   };
 
+  const toggleLayer = (layerKey) => {
+    setVisibleLayers((current) => {
+      const nextLayers = {
+        ...current,
+        [layerKey]: !current[layerKey],
+      };
+      if (layerKey === 'risk') {
+        setShowTraffic(nextLayers.risk);
+      }
+      setToast(`${MAP_LAYER_OPTIONS.find((option) => option.key === layerKey)?.label || 'Layer'} ${nextLayers[layerKey] ? 'shown' : 'hidden'}`);
+      return nextLayers;
+    });
+  };
+
   const openFullscreen = () => {
     if (selectedVehicle) centerVehicle(selectedVehicle);
     setFullscreenOpen(true);
   };
+
+  const layerControls = (
+    <div className={`map-layer-toggles ${compact ? 'compact' : ''}`}>
+      {MAP_LAYER_OPTIONS.map((layer) => (
+        <button
+          key={layer.key}
+          type="button"
+          className={`map-layer-toggle ${visibleLayers[layer.key] ? 'active' : ''}`}
+          onClick={() => toggleLayer(layer.key)}
+        >
+          {layer.label}
+        </button>
+      ))}
+    </div>
+  );
 
   const controls = (
     <div className={`live-fleet-map-toolbar tactical-map-toolbar ${compact ? 'compact-toolbar' : ''}`}>
@@ -396,7 +495,7 @@ export default function LiveFleetMap({
             </button>
           </>
         )}
-        <button type="button" className={`map-control-button ${showTraffic ? 'active' : ''}`} title="Toggle route risk overlay" onClick={() => setShowTraffic((value) => !value)}>
+        <button type="button" className={`map-control-button ${showTraffic && visibleLayers.risk ? 'active' : ''}`} title="Toggle route risk overlay" onClick={() => toggleLayer('risk')}>
           <Radar size={16} />
           <span>Risk</span>
         </button>
@@ -463,6 +562,7 @@ export default function LiveFleetMap({
         </div>
 
         {shouldShowToolbar && controls}
+        {shouldShowToolbar && layerControls}
 
         <FleetHudBar vehicles={displayedVehicles} compact={compact} lastSync={selectedVehicle?.lastUpdated || selectedVehicle?.lastSeen} />
 
@@ -484,6 +584,7 @@ export default function LiveFleetMap({
           panOffset={panOffset}
           hoveredVehicleId={hoveredVehicleId}
           mapTheme={mapTheme}
+          visibleLayers={visibleLayers}
           onHoverVehicle={setHoveredVehicleId}
           onSelectVehicle={handleSelectVehicle}
         />
@@ -516,7 +617,13 @@ export default function LiveFleetMap({
               <FleetHudBar vehicles={displayedVehicles} lastSync={selectedVehicle?.lastUpdated || selectedVehicle?.lastSeen} />
               <div className="map-fullscreen-topbar-actions">
                 {scenario && <ScenarioBadge scenario={scenario} />}
-                <button type="button" className={`map-control-button ${showTraffic ? 'active' : ''}`} onClick={() => setShowTraffic((value) => !value)}>
+                <button type="button" className="map-control-button" title="Zoom out" onClick={() => setZoomLevel((value) => Math.max(0.94, value - 0.06))}>
+                  <Minus size={16} />
+                </button>
+                <button type="button" className="map-control-button" title="Zoom in" onClick={() => setZoomLevel((value) => Math.min(1.24, value + 0.06))}>
+                  <Plus size={16} />
+                </button>
+                <button type="button" className={`map-control-button ${showTraffic && visibleLayers.risk ? 'active' : ''}`} onClick={() => toggleLayer('risk')}>
                   <Radar size={16} />
                   <span>Risk</span>
                 </button>
@@ -557,6 +664,9 @@ export default function LiveFleetMap({
                   <span>Close</span>
                 </button>
               </div>
+              <div className="map-fullscreen-layer-bar">
+                {layerControls}
+              </div>
             </div>
 
             <div className="map-fullscreen-layout tactical-fullscreen-layout">
@@ -570,11 +680,12 @@ export default function LiveFleetMap({
                   selectedVehicleId={selectedVehicle?.vehicleId}
                   compact={false}
                   fullscreen
-                  zoomLevel={1.1}
+                  zoomLevel={Math.max(1.04, zoomLevel)}
                   showTraffic={showTraffic}
                   panOffset={panOffset}
                   hoveredVehicleId={hoveredVehicleId}
                   mapTheme={mapTheme}
+                  visibleLayers={visibleLayers}
                   onHoverVehicle={setHoveredVehicleId}
                   onSelectVehicle={handleSelectVehicle}
                 />
