@@ -164,6 +164,16 @@ export default function Tracking() {
       </div>
 
       <div className="tracking-grid-upgraded tactical-tracking-grid">
+        <aside className="tracking-fleet-tray-column tactical-tracking-fleet-tray">
+          <div className="page-card tracking-list-card tracking-vehicle-list-card">
+            <FleetTray
+              vehicles={filteredVehicles}
+              selectedVehicleId={selectedVehicle?.vehicleId}
+              onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
+            />
+          </div>
+        </aside>
+
         <div className="tracking-map-column tactical-tracking-map-column">
           <LiveFleetMap
             vehicles={filteredVehicles}
@@ -177,21 +187,13 @@ export default function Tracking() {
           <LiveEventTicker vehicles={filteredVehicles} scenarioKey={scenarioKey} maxItems={4} />
         </div>
 
-        <div className="tracking-sidebar-column tactical-tracking-sidebar">
+        <aside className="tracking-sidebar-column tracking-intel-column tactical-tracking-sidebar">
           {selectedVehicle && (
             <div className="page-card route-history-card selected-vehicle-panel">
               <div className="card-header"><h3>Vehicle intelligence</h3></div>
               <VehicleIntelPanel vehicle={selectedVehicle} />
             </div>
           )}
-
-          <div className="page-card tracking-list-card tracking-vehicle-list-card">
-            <FleetTray
-              vehicles={filteredVehicles}
-              selectedVehicleId={selectedVehicle?.vehicleId}
-              onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
-            />
-          </div>
 
           {selectedVehicle && (
             <div className="page-card route-history-card">
@@ -210,7 +212,7 @@ export default function Tracking() {
               </div>
             </div>
           )}
-        </div>
+        </aside>
       </div>
     </div>
   );

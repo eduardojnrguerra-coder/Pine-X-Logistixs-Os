@@ -615,6 +615,7 @@ export default function Dashboard() {
               selectedVehicleId={selectedVehicleId}
               compact
               showCompactToolbar
+              showInlinePopup={false}
               onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
               scenario={scenario}
               scenarioKey={scenarioKey}

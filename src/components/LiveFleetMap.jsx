@@ -312,9 +312,11 @@ export default function LiveFleetMap({
 
   const centerVehicle = (vehicle) => {
     if (!vehicle) return;
+    const panLimit = fullscreenOpen ? 4.5 : Math.max(0, (zoomLevel - 1) * 48);
+    const clampPan = (value) => Math.max(-panLimit, Math.min(panLimit, value));
     setPanOffset({
-      x: (50 - vehicle.mapX) * 0.18,
-      y: (50 - vehicle.mapY) * 0.18,
+      x: clampPan((50 - vehicle.mapX) * 0.18),
+      y: clampPan((50 - vehicle.mapY) * 0.18),
     });
     setToast(`${vehicle.vehicleName} centered`);
   };
