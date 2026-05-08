@@ -30,6 +30,11 @@ const TERRAIN_PATH =
   'M 9 12 C 23 6, 42 9, 54 18 C 68 28, 78 28, 92 24 L 96 48 C 83 53, 78 60, 77 70 C 65 75, 52 75, 42 69 C 29 62, 18 50, 9 35 Z';
 const STATUS_FILTERS = ['All', 'On Route', 'Delayed', 'Offline', 'At Site', 'At Yard', 'Maintenance'];
 const SPEED_OPTIONS = [0.75, 1, 1.5, 2];
+const DISPLAY_MODES = {
+  COMPACT: 'compact',
+  FULL_PAGE: 'fullPage',
+  FULLSCREEN: 'fullscreen',
+};
 const MAP_LAYER_OPTIONS = [
   { key: 'routes', label: 'Routes' },
   { key: 'alerts', label: 'Alerts' },
@@ -43,6 +48,13 @@ const DEFAULT_MAP_LAYERS = {
   depots: true,
   geofences: true,
   risk: true,
+};
+const COMPACT_PREVIEW_LAYERS = {
+  routes: true,
+  alerts: false,
+  depots: false,
+  geofences: false,
+  risk: false,
 };
 const ROAD_LABELS = [
   { label: 'N2', x: 21, y: 31 },
@@ -138,8 +150,7 @@ const getRouteProgressSegments = (route, vehicle) => {
 function MapCanvas({
   vehicles,
   selectedVehicleId,
-  compact,
-  fullscreen,
+  displayMode,
   zoomLevel,
   showTraffic,
   panOffset,
@@ -149,6 +160,8 @@ function MapCanvas({
   onHoverVehicle,
   onSelectVehicle,
 }) {
+  const compact = displayMode === DISPLAY_MODES.COMPACT;
+  const fullscreen = displayMode === DISPLAY_MODES.FULLSCREEN;
   const selectedVehicle = vehicles.find((vehicle) => vehicle.vehicleId === selectedVehicleId) || null;
   const palette = getThemePalette(mapTheme);
 
@@ -217,14 +230,15 @@ function MapCanvas({
                 <g key={route.id} className={`route-corridor ${active ? 'active' : 'inactive'}`} filter={active ? 'url(#activeCorridorGlow)' : 'url(#corridorGlow)'}>
                   <path d={buildPath(route.points)} className={`fleet-route-line tactical-route ${showTraffic && visibleLayers.risk ? 'traffic-on' : ''}`} />
                   <path d={buildPath(route.points)} className="tactical-route-core" />
-                  {active && segments?.pendingPath && <path d={segments.pendingPath} className="selected-route-pending" />}
-                  {active && segments?.completedPath && <path d={segments.completedPath} className="selected-route-completed" />}
-                  {getDirectionMarkers(route.points, active).map((marker) => (
-                    <g key={marker.key} transform={`translate(${marker.mapX} ${marker.mapY}) rotate(${marker.heading})`}>
-                      <polygon points="-0.65,-0.42 0.7,0 -0.65,0.42" className={`fleet-route-arrow ${active ? 'active' : ''}`} />
-                      <circle cx="-1.55" cy="0" r="0.28" className={`fleet-route-direction-dot ${active ? 'active' : ''}`} />
-                    </g>
-                  ))}
+                  {!compact && active && segments?.pendingPath && <path d={segments.pendingPath} className="selected-route-pending" />}
+                  {!compact && active && segments?.completedPath && <path d={segments.completedPath} className="selected-route-completed" />}
+                  {!compact &&
+                    getDirectionMarkers(route.points, active).map((marker) => (
+                      <g key={marker.key} transform={`translate(${marker.mapX} ${marker.mapY}) rotate(${marker.heading})`}>
+                        <polygon points="-0.65,-0.42 0.7,0 -0.65,0.42" className={`fleet-route-arrow ${active ? 'active' : ''}`} />
+                        <circle cx="-1.55" cy="0" r="0.28" className={`fleet-route-direction-dot ${active ? 'active' : ''}`} />
+                      </g>
+                    ))}
                   {!compact && (
                     <>
                       <text x={route.labelX} y={route.labelY} className="route-road-label">
@@ -336,15 +350,20 @@ export default function LiveFleetMap({
   vehicles = [],
   selectedVehicleId,
   onSelectVehicle,
-  compact = false,
+  compact: compactProp = false,
+  displayMode: requestedDisplayMode,
   title = 'Live Fleet Map',
-  showCompactToolbar = false,
   showInlinePopup = true,
   scenario,
   scenarioKey = 'normal',
 }) {
+  // LiveFleetMap has three intentionally separate display modes:
+  // compact = dashboard preview, fullPage = /tracking, fullscreen = overlay.
+  const displayMode = requestedDisplayMode || (compactProp ? DISPLAY_MODES.COMPACT : DISPLAY_MODES.FULL_PAGE);
+  const isCompactMode = displayMode === DISPLAY_MODES.COMPACT;
+  const isFullPageMode = displayMode === DISPLAY_MODES.FULL_PAGE;
   const [showTraffic, setShowTraffic] = useState(true);
-  const [zoomLevel, setZoomLevel] = useState(compact ? 1 : 1.04);
+  const [zoomLevel, setZoomLevel] = useState(isCompactMode ? 1 : 1.04);
   const [statusFilter, setStatusFilter] = useState('All');
   const [hoveredVehicleId, setHoveredVehicleId] = useState(null);
   const [fullscreenOpen, setFullscreenOpen] = useState(false);
@@ -357,8 +376,8 @@ export default function LiveFleetMap({
 
   const displayedVehicles = useMemo(() => {
     const filteredByStatus = statusFilter === 'All' ? vehicles : vehicles.filter((vehicle) => vehicle.status === statusFilter);
-    return compact ? filteredByStatus.slice(0, 7) : filteredByStatus;
-  }, [compact, statusFilter, vehicles]);
+    return isCompactMode ? filteredByStatus.slice(0, 6) : filteredByStatus;
+  }, [isCompactMode, statusFilter, vehicles]);
 
   const selectedVehicle =
     displayedVehicles.find((vehicle) => vehicle.vehicleId === selectedVehicleId) ||
@@ -378,7 +397,9 @@ export default function LiveFleetMap({
     ].filter(Boolean);
   }, [displayedVehicles]);
 
-  const shouldShowToolbar = !compact || showCompactToolbar;
+  const inlineMapTheme = isCompactMode && !fullscreenOpen ? 'light' : mapTheme;
+  const inlineMapLayers = isCompactMode ? COMPACT_PREVIEW_LAYERS : visibleLayers;
+  const shouldShowToolbar = isFullPageMode;
 
   const centerVehicle = (vehicle) => {
     if (!vehicle) return;
@@ -393,7 +414,7 @@ export default function LiveFleetMap({
 
   const resetView = () => {
     setPanOffset({ x: 0, y: 0 });
-    setZoomLevel(compact ? 1 : 1.04);
+    setZoomLevel(isCompactMode ? 1 : 1.04);
     setFollowSelected(false);
     setToast('Map view reset');
   };
@@ -463,12 +484,13 @@ export default function LiveFleetMap({
   };
 
   const openFullscreen = () => {
+    if (isCompactMode) setMapTheme('dark');
     if (selectedVehicle) centerVehicle(selectedVehicle);
     setFullscreenOpen(true);
   };
 
   const layerControls = (
-    <div className={`map-layer-toggles ${compact ? 'compact' : ''}`}>
+    <div className={`map-layer-toggles ${isCompactMode && !fullscreenOpen ? 'compact' : ''}`}>
       {MAP_LAYER_OPTIONS.map((layer) => (
         <button
           key={layer.key}
@@ -482,10 +504,20 @@ export default function LiveFleetMap({
     </div>
   );
 
+  const compactPreviewControls = isCompactMode && (
+    <div className="compact-map-preview-controls">
+      <span className="live-badge">LIVE</span>
+      <button type="button" className="map-control-button compact-fullscreen-button" title="Open fullscreen command map" onClick={openFullscreen}>
+        <Maximize2 size={15} />
+        <span>Fullscreen</span>
+      </button>
+    </div>
+  );
+
   const controls = (
-    <div className={`live-fleet-map-toolbar tactical-map-toolbar ${compact ? 'compact-toolbar' : ''}`}>
+    <div className={`live-fleet-map-toolbar tactical-map-toolbar ${isCompactMode ? 'compact-toolbar' : ''}`}>
       <div className="live-fleet-map-controls">
-        {!compact && (
+        {isFullPageMode && (
           <>
             <button type="button" className="map-control-button" title="Zoom out" onClick={() => setZoomLevel((value) => Math.max(0.94, value - 0.06))}>
               <Minus size={16} />
@@ -507,7 +539,7 @@ export default function LiveFleetMap({
           {mapTheme === 'light' ? <MoonStar size={16} /> : <SunMedium size={16} />}
           <span>{mapTheme === 'light' ? 'Dark' : 'Light'}</span>
         </button>
-        {!compact && (
+        {isFullPageMode && (
           <button type="button" className="map-control-button" title="Reset map view" onClick={resetView}>
             <RotateCcw size={16} />
             <span>Reset</span>
@@ -519,7 +551,7 @@ export default function LiveFleetMap({
         </button>
       </div>
       <div className="live-fleet-map-toolbar-right">
-        <label className={`map-filter-select ${compact ? 'compact-filter' : ''}`}>
+        <label className={`map-filter-select ${isCompactMode ? 'compact-filter' : ''}`}>
           <Filter size={16} />
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             {STATUS_FILTERS.map((option) => (
@@ -545,11 +577,11 @@ export default function LiveFleetMap({
 
   return (
     <>
-      <div className={`live-fleet-map-card tactical-command-map ${compact ? 'compact' : 'full'} map-theme-${mapTheme}`}>
-        <div className="live-fleet-map-header tactical-map-header">
+      <div className={`live-fleet-map-card tactical-command-map mode-${displayMode} ${isCompactMode ? 'compact preview' : 'full'} map-theme-${inlineMapTheme}`}>
+        {isFullPageMode && <div className="live-fleet-map-header tactical-map-header">
           <div>
             <h3>{title}</h3>
-            <p>{compact ? 'Live fleet snapshot.' : 'Mission board for active fleet movement, route risk, and tracker visibility.'}</p>
+            <p>Mission board for active fleet movement, route risk, and tracker visibility.</p>
           </div>
           <div className="live-fleet-map-header-meta">
             <span className="live-badge">LIVE</span>
@@ -559,40 +591,39 @@ export default function LiveFleetMap({
                 : new Date().toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
-        </div>
+        </div>}
 
         {shouldShowToolbar && controls}
-        {shouldShowToolbar && layerControls}
+        {isFullPageMode && layerControls}
 
-        <FleetHudBar vehicles={displayedVehicles} compact={compact} lastSync={selectedVehicle?.lastUpdated || selectedVehicle?.lastSeen} />
+        {isFullPageMode && <FleetHudBar vehicles={displayedVehicles} compact={false} lastSync={selectedVehicle?.lastUpdated || selectedVehicle?.lastSeen} />}
 
-        <div className="map-notification-badges tactical-alert-badges">
+        {isFullPageMode && <div className="map-notification-badges tactical-alert-badges">
           {alertBadges.map((badge) => (
             <span key={badge.label} className={`map-notification-badge tone-${badge.tone}`}>
               {badge.label}
             </span>
           ))}
-        </div>
+        </div>}
 
         <MapCanvas
           vehicles={displayedVehicles}
           selectedVehicleId={selectedVehicle?.vehicleId}
-          compact={compact}
-          fullscreen={false}
+          displayMode={displayMode}
           zoomLevel={zoomLevel}
-          showTraffic={showTraffic}
+          showTraffic={isFullPageMode && showTraffic}
           panOffset={panOffset}
           hoveredVehicleId={hoveredVehicleId}
-          mapTheme={mapTheme}
-          visibleLayers={visibleLayers}
+          mapTheme={inlineMapTheme}
+          visibleLayers={inlineMapLayers}
           onHoverVehicle={setHoveredVehicleId}
           onSelectVehicle={handleSelectVehicle}
         />
 
-        {compact && <LiveEventTicker vehicles={displayedVehicles} scenarioKey={scenarioKey} compact maxItems={2} />}
+        {compactPreviewControls}
 
-        {showInlinePopup && selectedVehicle && (
-          <div className={`live-fleet-map-popup ${compact ? 'compact' : ''}`}>
+        {isFullPageMode && showInlinePopup && selectedVehicle && (
+          <div className="live-fleet-map-popup">
             <VehicleIntelPanel
               vehicle={selectedVehicle}
               compact
@@ -607,7 +638,7 @@ export default function LiveFleetMap({
       </div>
 
       {fullscreenOpen && (
-        <div className="map-fullscreen-overlay tactical-fullscreen-overlay">
+        <div className="map-fullscreen-overlay tactical-fullscreen-overlay mode-fullscreen">
           <div className="map-fullscreen-shell tactical-fullscreen-shell">
             <div className="map-fullscreen-topbar tactical-fullscreen-topbar">
               <div className="tactical-fullscreen-title">
@@ -678,8 +709,7 @@ export default function LiveFleetMap({
                 <MapCanvas
                   vehicles={displayedVehicles}
                   selectedVehicleId={selectedVehicle?.vehicleId}
-                  compact={false}
-                  fullscreen
+                  displayMode={DISPLAY_MODES.FULLSCREEN}
                   zoomLevel={Math.max(1.04, zoomLevel)}
                   showTraffic={showTraffic}
                   panOffset={panOffset}

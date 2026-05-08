@@ -179,6 +179,7 @@ export default function Tracking() {
             vehicles={filteredVehicles}
             selectedVehicleId={selectedVehicle?.vehicleId}
             onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
+            displayMode="fullPage"
             showInlinePopup={false}
             scenario={scenario}
             scenarioKey={scenarioKey}

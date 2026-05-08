@@ -1,8 +1,20 @@
-import { MonitorPlay, RotateCcw, X } from 'lucide-react';
+import { ArrowRight, BriefcaseBusiness, MapPinned, MessageSquareText, MonitorPlay, RotateCcw, Target, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { usePresenterMode } from '../context/PresenterModeContext';
 import ScenarioBadge from './ScenarioBadge';
 
+const NEXT_SCREEN_LABELS = {
+  '/': 'Owner Dashboard',
+  '/tracking': 'Live Fleet Tracking',
+  '/dispatch': 'Dispatch Board',
+  '/maintenance': 'Maintenance Alerts',
+  '/reports': 'Reports & Money Leakage',
+  '/customer-portal': 'Customer Portal',
+  '/invoices': 'Invoices',
+};
+
 export default function PresenterModePanel() {
+  const navigate = useNavigate();
   const {
     scenario,
     scenarioKey,
@@ -13,6 +25,12 @@ export default function PresenterModePanel() {
     setScenario,
     resetScenario,
   } = usePresenterMode();
+  const nextScreenLabel = NEXT_SCREEN_LABELS[scenario.nextScreen] || scenario.nextScreen;
+
+  const openNextScreen = () => {
+    navigate(scenario.nextScreen || '/');
+    setPanelOpen(false);
+  };
 
   return (
     <>
@@ -49,18 +67,48 @@ export default function PresenterModePanel() {
             ))}
           </div>
 
-          <div className="demo-scenario-details presenter-details">
-            <div>
-              <span className="maintenance-detail-label">Talk track</span>
-              <p>{scenario.talkTrack}</p>
+          <div className="presenter-talk-track-panel">
+            <div className="presenter-talk-track-heading">
+              <MessageSquareText size={18} />
+              <div>
+                <span>Presenter talk track</span>
+                <strong>{scenario.name}</strong>
+              </div>
             </div>
-            <div>
-              <span className="maintenance-detail-label">Sales angle</span>
-              <p>{scenario.salesAngle}</p>
-            </div>
-            <div>
-              <span className="maintenance-detail-label">Suggested next screen</span>
-              <p>{scenario.nextScreen}</p>
+
+            <div className="presenter-talk-track-grid">
+              <div className="presenter-talk-track-item">
+                <span className="presenter-talk-track-icon"><MessageSquareText size={15} /></span>
+                <div>
+                  <strong>What to say</strong>
+                  <p>{scenario.talkTrack}</p>
+                </div>
+              </div>
+              <div className="presenter-talk-track-item">
+                <span className="presenter-talk-track-icon"><Target size={15} /></span>
+                <div>
+                  <strong>What problem to point out</strong>
+                  <p>{scenario.painPoint}</p>
+                </div>
+              </div>
+              <div className="presenter-talk-track-item">
+                <span className="presenter-talk-track-icon"><MapPinned size={15} /></span>
+                <div>
+                  <strong>Which page to open next</strong>
+                  <p>{nextScreenLabel}</p>
+                  <button type="button" className="presenter-next-screen-button" onClick={openNextScreen}>
+                    Open {nextScreenLabel}
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="presenter-talk-track-item">
+                <span className="presenter-talk-track-icon"><BriefcaseBusiness size={15} /></span>
+                <div>
+                  <strong>What business pain this solves</strong>
+                  <p>{scenario.salesAngle}</p>
+                </div>
+              </div>
             </div>
           </div>
 

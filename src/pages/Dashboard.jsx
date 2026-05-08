@@ -491,6 +491,105 @@ export default function Dashboard() {
     return ['Live operations visible', 'Dispatch aligned', 'Commercial risk under control'];
   }, [scenarioKey]);
 
+  const ownerControlCards = useMemo(() => {
+    const linkedInvoicesByJob = data.invoices.reduce((acc, invoice) => {
+      if (invoice.jobId) {
+        acc[invoice.jobId] = invoice;
+      }
+      return acc;
+    }, {});
+    const completedNotInvoicedJobs = data.jobs.filter((job) => {
+      const linkedInvoice = linkedInvoicesByJob[job.id];
+      return job.status === 'Delivered' && (!linkedInvoice || linkedInvoice.status === 'Draft');
+    });
+    const delayedRevenue = delayedJobs.reduce((sum, job) => sum + job.price, 0);
+    const uninvoicedValue = completedNotInvoicedJobs.reduce((sum, job) => sum + job.price, 0);
+    const leakageTotal = moneyLeakage.reduce((sum, item) => sum + item.amount, 0);
+    const fuelWasteItem = moneyLeakage.find(
+      (item) => item.id === 'fuel-waste' || item.title.toLowerCase().includes('fuel')
+    );
+    const fuelWasteEstimate = fuelWasteItem?.amount || Math.round(leakageTotal * 0.14);
+    const newCustomerRequests = data.customerRequests.filter((request) => request.status === 'New').length;
+    const customerPressureCount = newCustomerRequests + overdueCustomers.length + recentCustomerMessages.length;
+    const outstandingValue = outstandingInvoices.reduce((sum, invoice) => sum + invoice.balance, 0);
+    const moneyAtRisk = leakageTotal + delayedRevenue + uninvoicedValue;
+
+    return [
+      {
+        label: 'Money at Risk',
+        value: formatCurrency(moneyAtRisk),
+        context: 'What is costing me money?',
+        why: 'Leakage, delayed work, overdue debtors, and unbilled completed jobs are visible in one owner number.',
+        action: 'Open the reports page and clear the highest-value leakage item first.',
+        icon: CircleDollarSign,
+        tone: 'danger',
+        route: '/reports',
+      },
+      {
+        label: 'Delayed Revenue',
+        value: formatCurrency(delayedRevenue),
+        context: `${delayedJobs.length} delayed job${delayedJobs.length === 1 ? '' : 's'}`,
+        why: 'Late deliveries delay customer sign-off, POD capture, and invoice confidence.',
+        action: 'Move dispatch focus to delayed jobs and update customers before they chase operations.',
+        icon: FileClock,
+        tone: 'warning',
+        route: '/dispatch',
+      },
+      {
+        label: 'Jobs Completed Not Invoiced',
+        value: completedNotInvoicedJobs.length,
+        context: formatCurrency(uninvoicedValue),
+        why: 'Completed work that remains in draft or has no invoice is revenue leakage hiding in operations.',
+        action: 'Review completed deliveries and convert every ready POD into an invoice.',
+        icon: FileText,
+        tone: 'blue',
+        route: '/reports',
+      },
+      {
+        label: 'Fuel Waste Estimate',
+        value: formatCurrency(fuelWasteEstimate),
+        context: `${metrics.fuelRiskVehicles} fuel-risk vehicle${metrics.fuelRiskVehicles === 1 ? '' : 's'}`,
+        why: 'Idle time, low-fuel exceptions, and tracker gaps quietly eat margin on otherwise good jobs.',
+        action: 'Check live tracking and coach the highest-idle route or driver today.',
+        icon: Gauge,
+        tone: 'amber',
+        route: '/tracking',
+      },
+      {
+        label: 'Vehicles Needing Action',
+        value: vehiclesNeedingAttention.length,
+        context: `${metrics.openMaintenance} open maintenance item${metrics.openMaintenance === 1 ? '' : 's'}`,
+        why: 'Vehicles with health, tracker, licence, or maintenance risk can remove capacity without warning.',
+        action: 'Open the attention queue and schedule the next workshop or compliance action.',
+        icon: Truck,
+        tone: 'slate',
+        route: '/vehicles',
+      },
+      {
+        label: 'Customer Pressure',
+        value: customerPressureCount,
+        context: `${formatCurrency(outstandingValue)} outstanding`,
+        why: 'New requests, recent messages, and overdue balances show where customers will call first.',
+        action: 'Prioritise the newest request and top debtor before the pressure reaches the owner.',
+        icon: Users,
+        tone: 'teal',
+        route: '/customers',
+      },
+    ];
+  }, [
+    data.customerRequests,
+    data.invoices,
+    data.jobs,
+    delayedJobs,
+    metrics.fuelRiskVehicles,
+    metrics.openMaintenance,
+    moneyLeakage,
+    outstandingInvoices,
+    overdueCustomers.length,
+    recentCustomerMessages.length,
+    vehiclesNeedingAttention.length,
+  ]);
+
   const safeScenarioNextScreen = scenario.nextScreen === '/invoices' ? '/reports' : scenario.nextScreen;
 
   return (
@@ -598,23 +697,54 @@ export default function Dashboard() {
         ))}
       </div>
 
+      <section className="owner-control-section" aria-labelledby="owner-control-heading">
+        <div className="owner-control-header">
+          <div>
+            <span className="owner-control-kicker">Owner control screen</span>
+            <h2 id="owner-control-heading">What needs attention today?</h2>
+            <p>Built to answer what is happening, what is costing money, and what needs action before the day runs away.</p>
+          </div>
+          <div className="owner-question-strip" aria-label="Dashboard owner questions">
+            <span>What is happening?</span>
+            <span>What is costing me money?</span>
+            <span>What needs action today?</span>
+          </div>
+        </div>
+
+        <div className="owner-control-grid">
+          {ownerControlCards.map((card) => (
+            <button
+              key={card.label}
+              type="button"
+              className={`owner-control-card tone-${card.tone}`}
+              onClick={() => navigate(card.route)}
+            >
+              <div className="owner-control-card-top">
+                <span className="owner-control-icon">
+                  <card.icon size={18} />
+                </span>
+                <span className="owner-control-context">{card.context}</span>
+              </div>
+              <div className="owner-control-main">
+                <strong>{card.value}</strong>
+                <span>{card.label}</span>
+              </div>
+              <div className="owner-control-copy">
+                <p><strong>Why it matters:</strong> {card.why}</p>
+                <p><strong>Recommended action:</strong> {card.action}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
       <div className="dashboard-command-grid summit-command-grid">
         <div className="dashboard-command-main">
           <div className="dashboard-card live-tracking-map-card premium-map-shell summit-map-shell">
-            <div className="dashboard-map-header">
-              <div>
-                <div className="dashboard-map-title-row">
-                  <h3>Live Fleet Tracking</h3>
-                  <span className="live-badge">LIVE</span>
-                </div>
-                <p>Real-time vehicle locations and status across active freight routes.</p>
-              </div>
-            </div>
             <LiveFleetMap
               vehicles={data.liveVehicles.slice(0, 6)}
               selectedVehicleId={selectedVehicleId}
-              compact
-              showCompactToolbar
+              displayMode="compact"
               showInlinePopup={false}
               onSelectVehicle={(vehicle) => setSelectedVehicleId(vehicle.vehicleId)}
               scenario={scenario}
@@ -624,9 +754,6 @@ export default function Dashboard() {
             <div className="compact-map-actions">
               <button className="action-btn small" onClick={() => navigate('/tracking')}>
                 Open full tracking
-              </button>
-              <button className="action-btn small primary" onClick={() => selectedVehicleId && navigate(`/vehicles/${selectedVehicleId}`)}>
-                Open selected vehicle
               </button>
             </div>
           </div>
