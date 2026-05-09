@@ -14,11 +14,27 @@ const SCENARIO_EVENTS = {
 const formatTime = (value) =>
   value ? new Date(value).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' }) : '--';
 
+const normalizeSeverity = (severity) => {
+  if (severity === 'danger' || severity === 'critical') return 'critical';
+  if (severity === 'warning') return 'warning';
+  return 'info';
+};
+
+const dedupeEvents = (items) => {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = item.message.toLowerCase().replace(/\d{1,2}:\d{2}/g, '').trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 export default function LiveEventTicker({
   vehicles = [],
   scenarioKey = 'normal',
   compact = false,
-  maxItems = 5,
+  maxItems = 4,
 }) {
   const [events, setEvents] = useState(() => liveFleetSimulator.getEvents());
 
@@ -30,9 +46,9 @@ export default function LiveEventTicker({
   const derivedEvents = useMemo(() => {
     const scenarioEvent = SCENARIO_EVENTS[scenarioKey]
       ? {
-          id: `scenario-${scenarioKey}`,
-          timestamp: new Date().toISOString(),
-          severity: scenarioKey === 'normal' ? 'info' : 'warning',
+        id: `scenario-${scenarioKey}`,
+        timestamp: new Date().toISOString(),
+        severity: scenarioKey === 'normal' ? 'info' : 'warning',
           message: SCENARIO_EVENTS[scenarioKey],
         }
       : null;
@@ -43,11 +59,16 @@ export default function LiveEventTicker({
       .map((vehicle) => ({
         id: `vehicle-${vehicle.vehicleId}-${vehicle.status}`,
         timestamp: vehicle.lastSeen,
-        severity: vehicle.status === 'Delayed' ? 'danger' : vehicle.status === 'Offline' ? 'neutral' : 'warning',
+        severity: vehicle.status === 'Delayed' || vehicle.status === 'Offline' ? 'critical' : 'warning',
         message: `${vehicle.registration} ${vehicle.liveAlerts[0].label.toLowerCase()} near ${vehicle.nextStop}.`,
       }));
 
-    return [scenarioEvent, ...urgentVehicleEvents, ...events].filter(Boolean).slice(0, maxItems);
+    return dedupeEvents([scenarioEvent, ...urgentVehicleEvents, ...events].filter(Boolean))
+      .map((event) => ({
+        ...event,
+        severity: normalizeSeverity(event.severity),
+      }))
+      .slice(0, maxItems);
   }, [compact, events, maxItems, scenarioKey, vehicles]);
 
   return (

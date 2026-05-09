@@ -56,27 +56,46 @@ export default function VehicleIntelPanel({
     window.setTimeout(() => setCallState(false), 1800);
   };
 
-  const intelItems = [
-    ['Driver', vehicle.driverName],
-    ['Phone', vehicle.driverPhone],
-    ['Driver status', driverStatus],
-    ['Speed', `${Math.round(vehicle.speed)} km/h`],
-    ['Heading', `${Math.round(vehicle.heading || 0)} deg`],
-    ['Ignition', vehicle.ignitionStatus],
-    ['Tracker', vehicle.provider],
-    ['Device', vehicle.trackerDeviceId],
-    ['Last sync', formatTime(vehicle.lastSeen)],
-    ['Job', vehicle.currentJobNumber],
-    ['Customer', vehicle.customerName],
-    ['Pickup', vehicle.pickupLocation],
-    ['Drop-off', vehicle.dropoffLocation],
-    ['Cargo', vehicle.cargo],
-    ['Job value', formatCurrency(vehicle.openInvoiceValue)],
-    ['ETA', vehicle.eta],
-    ['Next stop', vehicle.nextStop],
-    ['Fuel', `${Math.round(vehicle.fuelLevel)}%`],
-    ['Odometer', `${Math.round(vehicle.odometer).toLocaleString()} km`],
+  const intelSections = [
+    {
+      title: 'Live',
+      items: [
+        ['ETA', vehicle.eta],
+        ['Speed', `${Math.round(vehicle.speed)} km/h`],
+        ['Risk', delayRisk],
+        ['Next stop', vehicle.nextStop],
+      ],
+    },
+    {
+      title: 'Job',
+      items: [
+        ['Job', vehicle.currentJobNumber],
+        ['Customer', vehicle.customerName],
+        ['Cargo', vehicle.cargo],
+        ['Value', formatCurrency(vehicle.openInvoiceValue)],
+      ],
+    },
+    {
+      title: 'Vehicle',
+      items: [
+        ['Driver', vehicle.driverName],
+        ['Driver status', driverStatus],
+        ['Phone', vehicle.driverPhone],
+        ['Fuel', `${Math.round(vehicle.fuelLevel)}%`],
+        ['Odometer', `${Math.round(vehicle.odometer).toLocaleString()} km`],
+      ],
+    },
+    {
+      title: 'Risk',
+      items: [
+        ['Tracker', vehicle.provider],
+        ['Device', vehicle.trackerDeviceId],
+        ['Ignition', vehicle.ignitionStatus],
+        ['Last sync', formatTime(vehicle.lastSeen)],
+      ],
+    },
   ];
+  const visibleSections = compact ? intelSections.slice(0, 2) : intelSections;
 
   return (
     <div className={`vehicle-intel-panel ${compact ? 'compact' : ''}`}>
@@ -101,11 +120,18 @@ export default function VehicleIntelPanel({
         <span style={{ width: `${vehicle.routeProgress}%` }} />
       </div>
 
-      <div className="vehicle-intel-grid">
-        {intelItems.slice(0, compact ? 10 : intelItems.length).map(([label, value]) => (
-          <div key={label} className="vehicle-intel-item">
-            <span>{label}</span>
-            <strong>{value || '--'}</strong>
+      <div className="vehicle-intel-sections">
+        {visibleSections.map((section) => (
+          <div key={section.title} className="vehicle-intel-section">
+            <h4>{section.title}</h4>
+            <div className="vehicle-intel-grid">
+              {section.items.map(([label, value]) => (
+                <div key={`${section.title}-${label}`} className="vehicle-intel-item">
+                  <span>{label}</span>
+                  <strong>{value || '--'}</strong>
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>

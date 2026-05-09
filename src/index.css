@@ -9657,3 +9657,414 @@ body {
     max-width: 52%;
   }
 }
+
+/* Executive fullscreen map polish: keep compact dashboard preview separate and calm. */
+.mode-fullscreen.tactical-fullscreen-overlay {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.34), transparent 42%),
+    #020617;
+}
+
+.mode-fullscreen .tactical-fullscreen-topbar {
+  grid-template-columns: minmax(220px, 0.85fr) minmax(360px, 1.15fr) minmax(420px, auto);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom-color: rgba(51, 65, 85, 0.68);
+  background: rgba(3, 10, 24, 0.96);
+}
+
+.tactical-fullscreen-left {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.tactical-fullscreen-center {
+  min-width: 0;
+}
+
+.mode-fullscreen .tactical-fullscreen-title span {
+  color: rgba(153, 246, 228, 0.78);
+  font-size: 10px;
+}
+
+.mode-fullscreen .tactical-fullscreen-title h2 {
+  margin-top: 1px;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.mode-fullscreen .fleet-hud-bar.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.mode-fullscreen .fleet-hud-metric,
+.mode-fullscreen .fleet-hud-sync {
+  padding: 7px 8px;
+  border-color: rgba(51, 65, 85, 0.54);
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.mode-fullscreen .fleet-hud-metric span {
+  font-size: 10px;
+}
+
+.mode-fullscreen .fleet-hud-metric strong {
+  font-size: 11px;
+}
+
+.tactical-fullscreen-actions {
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.mode-fullscreen .map-fullscreen-layer-bar .map-layer-toggles {
+  gap: 5px;
+}
+
+.mode-fullscreen .map-layer-toggle,
+.mode-fullscreen .map-control-button,
+.mode-fullscreen .map-filter-select,
+.mode-fullscreen .primary-button {
+  min-height: 34px;
+  padding: 7px 9px;
+  border-color: rgba(71, 85, 105, 0.58);
+  background: rgba(15, 23, 42, 0.5);
+  color: rgba(226, 232, 240, 0.82);
+  font-size: 11px;
+}
+
+.mode-fullscreen .map-control-button.active,
+.mode-fullscreen .map-layer-toggle.active {
+  background: rgba(20, 184, 166, 0.12);
+  border-color: rgba(45, 212, 191, 0.32);
+  color: rgba(204, 251, 241, 0.9);
+}
+
+.mode-fullscreen .map-zoom-control {
+  width: 34px;
+  padding: 0;
+}
+
+.mode-fullscreen .tactical-fullscreen-list {
+  flex: 0 0 240px;
+  width: 240px;
+  max-width: 240px;
+  padding: 12px;
+  background: rgba(5, 13, 28, 0.9);
+  border-right-color: rgba(51, 65, 85, 0.58);
+}
+
+.mode-fullscreen .tactical-fullscreen-side {
+  flex: 0 0 340px;
+  width: 340px;
+  max-width: 340px;
+  padding: 12px;
+  background: rgba(5, 13, 28, 0.92);
+  border-left-color: rgba(51, 65, 85, 0.58);
+}
+
+.mode-fullscreen .tactical-fullscreen-map {
+  gap: 8px;
+  padding: 10px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(30, 41, 59, 0.08), transparent 56%),
+    #020617;
+}
+
+.mode-fullscreen.focus-mode .tactical-fullscreen-map {
+  padding-left: 14px;
+}
+
+.mode-fullscreen.focus-mode .tactical-fullscreen-side {
+  flex-basis: 340px;
+}
+
+.mode-fullscreen .tactical-map-stage::after {
+  opacity: 0.14;
+}
+
+.mode-fullscreen .tactical-scanline {
+  opacity: 0.16;
+}
+
+.mode-fullscreen .tactical-radar-sweep {
+  opacity: 0.14;
+}
+
+.mode-fullscreen .tactical-road-network path {
+  stroke: rgba(148, 163, 184, 0.14);
+  stroke-width: 0.26;
+}
+
+.mode-fullscreen .route-corridor.inactive {
+  opacity: 0.12;
+}
+
+.mode-fullscreen .fleet-route-line.tactical-route {
+  stroke: rgba(56, 189, 248, 0.26);
+  stroke-width: 0.9;
+  opacity: 0.5;
+}
+
+.mode-fullscreen .route-corridor.active .fleet-route-line.tactical-route {
+  stroke: rgba(94, 234, 212, 0.88);
+  stroke-width: 1.85;
+  opacity: 0.96;
+}
+
+.mode-fullscreen .selected-route-pending {
+  stroke: rgba(148, 163, 184, 0.25);
+  stroke-width: 1;
+}
+
+.mode-fullscreen .selected-route-completed {
+  stroke: rgba(250, 204, 21, 0.6);
+  stroke-width: 1.25;
+}
+
+.mode-fullscreen .tactical-route-core {
+  opacity: 0.42;
+}
+
+.mode-fullscreen .fleet-route-arrow,
+.mode-fullscreen .fleet-route-direction-dot {
+  opacity: 0.44;
+}
+
+.mode-fullscreen .route-road-label,
+.mode-fullscreen .route-corridor-label,
+.mode-fullscreen .road-context-label {
+  font-size: 0.92px;
+  letter-spacing: 0.08em;
+  fill: rgba(203, 213, 225, 0.3);
+}
+
+.mode-fullscreen .road-context-label.risk {
+  fill: rgba(252, 165, 165, 0.42);
+}
+
+.mode-fullscreen .tactical-geofence circle {
+  fill-opacity: 0.58;
+  stroke-opacity: 0.62;
+  stroke-width: 0.24;
+}
+
+.mode-fullscreen .tactical-geofence-label,
+.mode-fullscreen .tactical-place-label {
+  font-size: 0.92px;
+  font-weight: 700;
+  fill: rgba(203, 213, 225, 0.34) !important;
+}
+
+.mode-fullscreen .tactical-map-pin circle {
+  opacity: 0.68;
+}
+
+.mode-fullscreen .fleet-marker-glow {
+  inset: -2px;
+  opacity: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--marker-color) 24%, transparent) 0%, transparent 70%);
+}
+
+.mode-fullscreen .tactical-vehicle-marker:not(.selected) {
+  opacity: 0.86;
+}
+
+.mode-fullscreen .tactical-vehicle-marker:not(.selected) .fleet-marker-ring {
+  width: 26px;
+  height: 26px;
+  border-width: 1.6px;
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--marker-color) 10%, transparent),
+    0 10px 18px rgba(2, 6, 23, 0.28);
+}
+
+.mode-fullscreen .tactical-vehicle-marker:not(.selected) .fleet-marker-icon {
+  width: 22px;
+  height: 14px;
+  box-shadow: 0 9px 18px rgba(2, 6, 23, 0.32);
+}
+
+.mode-fullscreen .tactical-vehicle-marker.selected .fleet-marker-ring {
+  width: 42px;
+  height: 42px;
+  border-width: 2.4px;
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--marker-color) 18%, transparent),
+    0 0 20px color-mix(in srgb, var(--marker-color) 28%, transparent),
+    0 16px 30px rgba(2, 6, 23, 0.38);
+}
+
+.mode-fullscreen .tactical-marker-label {
+  max-width: 122px;
+  padding: 7px 8px;
+  border-color: rgba(71, 85, 105, 0.72);
+  background: rgba(2, 6, 23, 0.78);
+  box-shadow: 0 10px 18px rgba(2, 6, 23, 0.24);
+}
+
+.mode-fullscreen .tactical-marker-label strong {
+  font-size: 10.5px;
+}
+
+.mode-fullscreen .tactical-marker-label small,
+.mode-fullscreen .tactical-marker-label em {
+  font-size: 9.5px;
+}
+
+.mode-fullscreen .fleet-tray {
+  gap: 8px;
+}
+
+.mode-fullscreen .fleet-tray-list {
+  gap: 6px;
+}
+
+.mode-fullscreen .fleet-tray-item {
+  grid-template-columns: 10px minmax(0, 1fr);
+  padding: 8px;
+  border-color: rgba(51, 65, 85, 0.56);
+  background: rgba(15, 23, 42, 0.52);
+}
+
+.mode-fullscreen .fleet-tray-main small {
+  display: none;
+}
+
+.mode-fullscreen .fleet-tray-meta {
+  grid-column: 2;
+  align-items: flex-start;
+}
+
+.mode-fullscreen .fleet-tray-meta strong {
+  font-size: 10px;
+  color: rgba(203, 213, 225, 0.7);
+}
+
+.mode-fullscreen .fleet-tray-meta small {
+  display: none;
+}
+
+.mode-fullscreen .live-event-ticker {
+  min-height: 38px;
+  padding: 7px 9px;
+  border-color: rgba(51, 65, 85, 0.58);
+  background: rgba(5, 13, 28, 0.84);
+}
+
+.mode-fullscreen .live-event-ticker-label {
+  color: rgba(153, 246, 228, 0.74);
+  font-size: 10px;
+}
+
+.mode-fullscreen .live-event-ticker-stream {
+  gap: 7px;
+}
+
+.mode-fullscreen .live-event-item {
+  padding: 5px 8px;
+  border-color: rgba(51, 65, 85, 0.56);
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.live-event-item.severity-info {
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.live-event-item.severity-critical {
+  border-color: rgba(248, 113, 113, 0.48);
+  background: rgba(127, 29, 29, 0.18);
+}
+
+.mode-fullscreen .live-event-item strong {
+  max-width: 360px;
+  overflow: hidden;
+  color: rgba(226, 232, 240, 0.88);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vehicle-intel-sections {
+  display: grid;
+  gap: 10px;
+}
+
+.vehicle-intel-section {
+  display: grid;
+  gap: 7px;
+}
+
+.vehicle-intel-section h4 {
+  margin: 0;
+  color: rgba(153, 246, 228, 0.74);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mode-fullscreen .vehicle-intel-panel {
+  gap: 10px;
+}
+
+.mode-fullscreen .vehicle-intel-header h3 {
+  font-size: 16px;
+}
+
+.mode-fullscreen .vehicle-intel-header p {
+  font-size: 12px;
+}
+
+.mode-fullscreen .vehicle-intel-strip {
+  gap: 7px;
+}
+
+.mode-fullscreen .vehicle-intel-strip div,
+.mode-fullscreen .vehicle-intel-item,
+.mode-fullscreen .vehicle-intel-alert {
+  border-color: rgba(51, 65, 85, 0.56);
+  background: rgba(15, 23, 42, 0.46);
+}
+
+.mode-fullscreen .vehicle-intel-grid {
+  gap: 7px;
+}
+
+.mode-fullscreen .vehicle-intel-item {
+  padding: 8px;
+}
+
+.mode-fullscreen .vehicle-intel-alert {
+  padding: 8px;
+  font-size: 12px;
+}
+
+.mode-fullscreen .vehicle-intel-actions .action-btn {
+  min-height: 32px;
+  padding: 7px 9px;
+}
+
+@media (max-width: 1300px) {
+  .mode-fullscreen .tactical-fullscreen-topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .mode-fullscreen .tactical-fullscreen-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 1100px) {
+  .mode-fullscreen .tactical-fullscreen-list,
+  .mode-fullscreen .tactical-fullscreen-side {
+    width: 100%;
+    max-width: none;
+  }
+}

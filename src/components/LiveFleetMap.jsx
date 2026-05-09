@@ -9,6 +9,7 @@ import {
   Radar,
   RotateCcw,
   SunMedium,
+  Target,
   Truck,
   X,
 } from 'lucide-react';
@@ -67,6 +68,8 @@ const ROAD_LABELS = [
   { label: 'High Risk Delay Zone', x: 69, y: 51, tone: 'risk' },
 ];
 const HIDDEN_MAP_POINT_ALIASES = new Set(['HFC Site', 'Onrus Site']);
+const KEY_FULLSCREEN_POINT_LABELS = new Set(['Cape Town Depot', 'Hermanus Yard', 'Caledon Hub', 'Gansbaai Site', 'Fuel Stop']);
+const CRITICAL_VEHICLE_STATUSES = new Set(['Delayed', 'Offline', 'Maintenance']);
 
 const buildPath = (points) => {
   if (!points || points.length < 2) return '';
@@ -157,6 +160,7 @@ function MapCanvas({
   hoveredVehicleId,
   mapTheme,
   visibleLayers,
+  focusMode = false,
   onHoverVehicle,
   onSelectVehicle,
 }) {
@@ -173,7 +177,14 @@ function MapCanvas({
         className={`live-fleet-map-canvas tactical-map-canvas ${fullscreen ? 'fullscreen' : ''} ${mapTheme}`}
         style={{ transform: `translate(${panOffset.x}%, ${panOffset.y}%) scale(${zoomLevel})` }}
       >
-        <svg viewBox="0 0 100 100" className={`live-fleet-map-svg tactical-map-svg ${mapTheme}`} aria-label="Live tactical fleet map">
+        <svg
+          viewBox="0 0 100 100"
+          width="100%"
+          height="100%"
+          preserveAspectRatio="none"
+          className={`live-fleet-map-svg tactical-map-svg ${mapTheme}`}
+          aria-label="Live tactical fleet map"
+        >
           <defs>
             <linearGradient id={`tacticalLand-${mapTheme}`} x1="0%" x2="100%" y1="0%" y2="100%">
               <stop offset="0%" stopColor={palette.landStart} />
@@ -187,10 +198,10 @@ function MapCanvas({
               <path d="M 5 0 L 0 0 0 5" fill="none" stroke={palette.grid} strokeWidth="0.25" />
             </pattern>
             <filter id="corridorGlow" x="-30%" y="-30%" width="160%" height="160%">
-              <feDropShadow dx="0" dy="0" stdDeviation="1.2" floodColor="rgba(56, 189, 248, 0.42)" />
+              <feDropShadow dx="0" dy="0" stdDeviation="0.7" floodColor="rgba(56, 189, 248, 0.24)" />
             </filter>
             <filter id="activeCorridorGlow" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="rgba(34, 197, 94, 0.72)" />
+              <feDropShadow dx="0" dy="0" stdDeviation="1.1" floodColor="rgba(34, 197, 94, 0.48)" />
             </filter>
           </defs>
 
@@ -211,10 +222,13 @@ function MapCanvas({
           )}
 
           {visibleLayers.geofences &&
-            TRACKING_GEOFENCES.filter((zone) => visibleLayers.risk || !['risk', 'signal'].includes(zone.type)).map((zone) => (
+            TRACKING_GEOFENCES.filter((zone) => {
+              if (focusMode) return zone.severity === 'danger';
+              return visibleLayers.risk || !['risk', 'signal'].includes(zone.type);
+            }).map((zone) => (
               <g key={zone.id} className={`tactical-geofence type-${zone.type} severity-${zone.severity}`}>
                 <circle cx={zone.mapX} cy={zone.mapY} r={zone.radius} />
-                {!compact && (
+                {!compact && !focusMode && (
                   <text x={zone.mapX} y={zone.mapY - zone.radius - 1.1} className="tactical-geofence-label">
                     {zone.label}
                   </text>
@@ -223,30 +237,32 @@ function MapCanvas({
             ))}
 
           {visibleLayers.routes &&
-            TRACKING_ROUTE_CORRIDORS.map((route) => {
+            TRACKING_ROUTE_CORRIDORS.filter((route) => !focusMode || selectedVehicle?.routeId === route.id).map((route) => {
               const active = selectedVehicle?.routeId === route.id;
               const segments = getRouteProgressSegments(route, selectedVehicle);
+              const showRouteLabels = !compact && (!fullscreen || active);
+              const showRouteDetails = !compact && (!fullscreen || active) && !focusMode;
               return (
                 <g key={route.id} className={`route-corridor ${active ? 'active' : 'inactive'}`} filter={active ? 'url(#activeCorridorGlow)' : 'url(#corridorGlow)'}>
                   <path d={buildPath(route.points)} className={`fleet-route-line tactical-route ${showTraffic && visibleLayers.risk ? 'traffic-on' : ''}`} />
                   <path d={buildPath(route.points)} className="tactical-route-core" />
                   {!compact && active && segments?.pendingPath && <path d={segments.pendingPath} className="selected-route-pending" />}
                   {!compact && active && segments?.completedPath && <path d={segments.completedPath} className="selected-route-completed" />}
-                  {!compact &&
+                  {showRouteDetails &&
                     getDirectionMarkers(route.points, active).map((marker) => (
                       <g key={marker.key} transform={`translate(${marker.mapX} ${marker.mapY}) rotate(${marker.heading})`}>
                         <polygon points="-0.65,-0.42 0.7,0 -0.65,0.42" className={`fleet-route-arrow ${active ? 'active' : ''}`} />
                         <circle cx="-1.55" cy="0" r="0.28" className={`fleet-route-direction-dot ${active ? 'active' : ''}`} />
                       </g>
                     ))}
-                  {!compact && (
+                  {showRouteLabels && (
                     <>
                       <text x={route.labelX} y={route.labelY} className="route-road-label">
                         {route.roadLabel}
                       </text>
-                      <text x={route.labelX} y={route.labelY + 2.2} className="route-corridor-label">
+                      {!fullscreen && <text x={route.labelX} y={route.labelY + 2.2} className="route-corridor-label">
                         {route.corridorLabel}
-                      </text>
+                      </text>}
                     </>
                   )}
                 </g>
@@ -255,7 +271,10 @@ function MapCanvas({
 
           {visibleLayers.routes &&
             !compact &&
-            ROAD_LABELS.filter((label) => visibleLayers.risk || label.tone !== 'risk').map((label) => (
+            ROAD_LABELS.filter((label) => visibleLayers.risk || label.tone !== 'risk')
+              .filter((label) => !focusMode && (!fullscreen || ['N2', 'R43', 'R44', 'R316'].includes(label.label)))
+              .slice(0, fullscreen ? 4 : ROAD_LABELS.length)
+              .map((label) => (
               <text key={label.label} x={label.x} y={label.y} className={`road-context-label ${label.tone === 'risk' ? 'risk' : ''}`}>
                 {label.label}
               </text>
@@ -265,7 +284,10 @@ function MapCanvas({
             if (HIDDEN_MAP_POINT_ALIASES.has(name)) return null;
             const pinType = getPinType(name);
             if (isOperationalPin(pinType) && !visibleLayers.depots) return null;
-            const showLabel = !compact && (visibleLayers.depots || !isOperationalPin(pinType));
+            const showLabel =
+              !compact &&
+              !focusMode &&
+              (fullscreen ? KEY_FULLSCREEN_POINT_LABELS.has(name) : visibleLayers.depots || !isOperationalPin(pinType));
             return (
               <g key={name} className={`tactical-map-pin pin-${pinType}`}>
                 <circle cx={point.mapX} cy={point.mapY} r={pinType === 'town' ? 0.55 : 0.95} />
@@ -284,14 +306,22 @@ function MapCanvas({
           })}
         </svg>
 
-        {vehicles.map((vehicle, index) => {
+        {vehicles.map((vehicle) => {
           const isSelected = selectedVehicleId === vehicle.vehicleId;
           const isHovered = hoveredVehicleId === vehicle.vehicleId;
-          const showLabel = isSelected || isHovered || fullscreen || (!compact && index % 3 === 0);
+          const isCritical = CRITICAL_VEHICLE_STATUSES.has(vehicle.status) || vehicle.liveAlerts?.length > 0;
+          const showLabel = isSelected || isHovered || (!compact && !focusMode && isCritical);
 
           return (
             <div key={`${vehicle.vehicleId}-layer`} className="fleet-trail-layer">
-              <svg viewBox="0 0 100 100" className="fleet-trail-svg" aria-hidden="true">
+              <svg
+                viewBox="0 0 100 100"
+                width="100%"
+                height="100%"
+                preserveAspectRatio="none"
+                className="fleet-trail-svg"
+                aria-hidden="true"
+              >
                 <polyline
                   points={(vehicle.movementTrail || []).map((point) => `${point.mapX},${point.mapY}`).join(' ')}
                   className={`fleet-trail-line ${vehicle.status === 'Offline' ? 'offline' : ''}`}
@@ -372,6 +402,7 @@ export default function LiveFleetMap({
   const [toast, setToast] = useState('');
   const [mapTheme, setMapTheme] = useState('dark');
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_MAP_LAYERS);
+  const [focusMode, setFocusMode] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState(() => liveFleetSimulator.getSpeedMultiplier());
 
   const displayedVehicles = useMemo(() => {
@@ -400,6 +431,16 @@ export default function LiveFleetMap({
   const inlineMapTheme = isCompactMode && !fullscreenOpen ? 'light' : mapTheme;
   const inlineMapLayers = isCompactMode ? COMPACT_PREVIEW_LAYERS : visibleLayers;
   const shouldShowToolbar = isFullPageMode;
+  const focusMapLayers = focusMode
+    ? {
+        routes: true,
+        alerts: true,
+        depots: false,
+        geofences: false,
+        risk: false,
+      }
+    : visibleLayers;
+  const fullscreenMapVehicles = focusMode && selectedVehicle ? [selectedVehicle] : displayedVehicles;
 
   const centerVehicle = (vehicle) => {
     if (!vehicle) return;
@@ -638,26 +679,37 @@ export default function LiveFleetMap({
       </div>
 
       {fullscreenOpen && (
-        <div className="map-fullscreen-overlay tactical-fullscreen-overlay mode-fullscreen">
+        <div className={`map-fullscreen-overlay tactical-fullscreen-overlay mode-fullscreen ${focusMode ? 'focus-mode' : ''}`}>
           <div className="map-fullscreen-shell tactical-fullscreen-shell">
             <div className="map-fullscreen-topbar tactical-fullscreen-topbar">
-              <div className="tactical-fullscreen-title">
-                <span>Command map</span>
-                <h2>Fleet Control Room</h2>
+              <div className="tactical-fullscreen-left">
+                <div className="tactical-fullscreen-title">
+                  <span>Command map</span>
+                  <h2>Fleet Control Room</h2>
+                </div>
+                {!focusMode && <div className="map-fullscreen-layer-bar">{layerControls}</div>}
               </div>
-              <FleetHudBar vehicles={displayedVehicles} lastSync={selectedVehicle?.lastUpdated || selectedVehicle?.lastSeen} />
-              <div className="map-fullscreen-topbar-actions">
+
+              <div className="tactical-fullscreen-center">
+                <FleetHudBar vehicles={displayedVehicles} compact lastSync={selectedVehicle?.lastUpdated || selectedVehicle?.lastSeen} />
+              </div>
+
+              <div className="map-fullscreen-topbar-actions tactical-fullscreen-actions">
                 {scenario && <ScenarioBadge scenario={scenario} />}
-                <button type="button" className="map-control-button" title="Zoom out" onClick={() => setZoomLevel((value) => Math.max(0.94, value - 0.06))}>
+                <button type="button" className={`map-control-button ${focusMode ? 'active' : ''}`} title="Toggle focus mode" onClick={() => setFocusMode((value) => !value)}>
+                  <Target size={16} />
+                  <span>Focus</span>
+                </button>
+                <button type="button" className="map-control-button map-zoom-control" title="Zoom out" onClick={() => setZoomLevel((value) => Math.max(0.94, value - 0.06))}>
                   <Minus size={16} />
                 </button>
-                <button type="button" className="map-control-button" title="Zoom in" onClick={() => setZoomLevel((value) => Math.min(1.24, value + 0.06))}>
+                <button type="button" className="map-control-button map-zoom-control" title="Zoom in" onClick={() => setZoomLevel((value) => Math.min(1.24, value + 0.06))}>
                   <Plus size={16} />
                 </button>
-                <button type="button" className={`map-control-button ${showTraffic && visibleLayers.risk ? 'active' : ''}`} onClick={() => toggleLayer('risk')}>
+                {!focusMode && <button type="button" className={`map-control-button ${showTraffic && visibleLayers.risk ? 'active' : ''}`} onClick={() => toggleLayer('risk')}>
                   <Radar size={16} />
                   <span>Risk</span>
-                </button>
+                </button>}
                 <button type="button" className={`map-control-button ${followSelected ? 'active' : ''}`} onClick={() => toggleFollowSelected()}>
                   <LocateFixed size={16} />
                   <span>Follow</span>
@@ -695,31 +747,29 @@ export default function LiveFleetMap({
                   <span>Close</span>
                 </button>
               </div>
-              <div className="map-fullscreen-layer-bar">
-                {layerControls}
-              </div>
             </div>
 
             <div className="map-fullscreen-layout tactical-fullscreen-layout">
-              <aside className="map-fullscreen-list tactical-fullscreen-list">
+              {!focusMode && <aside className="map-fullscreen-list tactical-fullscreen-list">
                 <FleetTray vehicles={displayedVehicles} selectedVehicleId={selectedVehicle?.vehicleId} onSelectVehicle={handleSelectVehicle} />
-              </aside>
+              </aside>}
 
               <main className="map-fullscreen-map tactical-fullscreen-map">
                 <MapCanvas
-                  vehicles={displayedVehicles}
+                  vehicles={fullscreenMapVehicles}
                   selectedVehicleId={selectedVehicle?.vehicleId}
                   displayMode={DISPLAY_MODES.FULLSCREEN}
                   zoomLevel={Math.max(1.04, zoomLevel)}
-                  showTraffic={showTraffic}
+                  showTraffic={!focusMode && showTraffic}
                   panOffset={panOffset}
                   hoveredVehicleId={hoveredVehicleId}
                   mapTheme={mapTheme}
-                  visibleLayers={visibleLayers}
+                  visibleLayers={focusMapLayers}
+                  focusMode={focusMode}
                   onHoverVehicle={setHoveredVehicleId}
                   onSelectVehicle={handleSelectVehicle}
                 />
-                <LiveEventTicker vehicles={displayedVehicles} scenarioKey={scenarioKey} maxItems={5} />
+                {!focusMode && <LiveEventTicker vehicles={displayedVehicles} scenarioKey={scenarioKey} maxItems={4} />}
               </main>
 
               <aside className="map-fullscreen-side tactical-fullscreen-side">
