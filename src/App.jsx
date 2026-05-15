@@ -19,6 +19,7 @@ import Tracking from './pages/Tracking';
 import Settings from './pages/Settings';
 import VehicleDetail from './pages/VehicleDetail';
 import CustomerHealth from './pages/CustomerHealth';
+import Implementation from './pages/Implementation';
 import { PresenterModeProvider } from './context/PresenterModeContext';
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="maintenance" element={<Maintenance />} />
             <Route path="reports" element={<Reports />} />
             <Route path="tracking" element={<Tracking />} />
+            <Route path="implementation" element={<Implementation />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

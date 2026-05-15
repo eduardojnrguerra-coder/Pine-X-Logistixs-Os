@@ -201,12 +201,43 @@ export default function Dashboard() {
       : buildTrendSeries(fleetUtilization, [-12, -4, 2, 8, 4, 10, 14]),
   }), [fleetUtilization, jobsInProgress.length, metrics.activeDeliveries, metrics.offlineTrackers, outstandingInvoices.length, pendingQuotes.length, revenueMtd, scenarioKey]);
 
+  const dashboardCommercialSignals = useMemo(() => {
+    const linkedInvoicesByJob = data.invoices.reduce((acc, invoice) => {
+      if (invoice.jobId) {
+        acc[invoice.jobId] = invoice;
+      }
+      return acc;
+    }, {});
+    const completedNotInvoicedJobs = data.jobs.filter((job) => {
+      const linkedInvoice = linkedInvoicesByJob[job.id];
+      return job.status === 'Delivered' && (!linkedInvoice || linkedInvoice.status === 'Draft');
+    });
+    const pendingQuoteValue = pendingQuotes.reduce((sum, quote) => sum + quote.total, 0);
+    const outstandingValue = outstandingInvoices.reduce((sum, invoice) => sum + invoice.balance, 0);
+    const leakageTotal = moneyLeakage.reduce((sum, item) => sum + item.amount, 0);
+
+    return {
+      completedNotInvoicedCount: completedNotInvoicedJobs.length,
+      highPriorityLoads: activeJobs.filter((job) => job.priority === 'High').length,
+      leakageTotal,
+      onRouteVehicles: data.liveVehicles.filter((vehicle) => vehicle.status === 'On Route').length,
+      outstandingValue,
+      paidInvoiceCount: data.invoices.filter((invoice) => invoice.status === 'Paid').length,
+      pendingQuoteValue,
+      sentQuoteCount: pendingQuotes.filter((quote) => quote.status === 'Sent').length,
+    };
+  }, [activeJobs, data.invoices, data.jobs, data.liveVehicles, moneyLeakage, outstandingInvoices, pendingQuotes]);
+
   const kpis = useMemo(() => [
     {
       label: 'Active Deliveries',
       value: metrics.activeDeliveries,
-      meta: `${data.liveVehicles.filter((vehicle) => vehicle.status === 'On Route').length} trucks moving now`,
-      change: `${activeJobs.filter((job) => job.priority === 'High').length} high-priority loads`,
+      meta: `${dashboardCommercialSignals.onRouteVehicles} trucks moving now`,
+      change: `${dashboardCommercialSignals.highPriorityLoads} high-priority loads need watching`,
+      why: 'This is today\'s live earning work. If it stalls, delivery, POD capture, and billing all slip.',
+      action: delayedJobs.length > 0
+        ? 'Open dispatch and clear delayed or high-priority loads first.'
+        : 'Keep dispatch focused on ETA accuracy and same-day POD capture.',
       trend: kpiTrends.activeDeliveries,
       icon: Truck,
       tone: 'blue',
@@ -215,8 +246,10 @@ export default function Dashboard() {
     {
       label: 'Jobs In Progress',
       value: jobsInProgress.length,
-      meta: `${dateLabel} operating volume`,
-      change: `${delayedJobs.length} exception${delayedJobs.length === 1 ? '' : 's'}`,
+      meta: `${dateLabel}: ${jobsInProgress.length} jobs using fleet capacity`,
+      change: `${delayedJobs.length} job${delayedJobs.length === 1 ? '' : 's'} need intervention today`,
+      why: 'Work in progress is where service risk, overtime, and customer pressure start before the invoice exists.',
+      action: 'Review status ownership and move blocked jobs to the next accountable stage.',
       trend: kpiTrends.jobsInProgress,
       icon: ClipboardList,
       tone: 'teal',
@@ -225,8 +258,10 @@ export default function Dashboard() {
     {
       label: 'Quotes Pending',
       value: pendingQuotes.length,
-      meta: formatCurrency(pendingQuotes.reduce((sum, quote) => sum + quote.total, 0)),
-      change: `${pendingQuotes.filter((quote) => quote.status === 'Sent').length} awaiting decision`,
+      meta: `${formatCurrency(dashboardCommercialSignals.pendingQuoteValue)} potential revenue waiting`,
+      change: `${dashboardCommercialSignals.sentQuoteCount} quotes need a customer decision`,
+      why: 'Unapproved quotes mean trucks, routes, and future revenue are not secured yet.',
+      action: 'Follow up the highest-value quote and convert it into a scheduled job.',
       trend: kpiTrends.quotesPending,
       icon: FileClock,
       tone: 'amber',
@@ -234,9 +269,11 @@ export default function Dashboard() {
     },
     {
       label: 'Invoices Outstanding',
-      value: formatCurrency(outstandingInvoices.reduce((sum, invoice) => sum + invoice.balance, 0)),
-      meta: `${outstandingInvoices.length} open invoices`,
-      change: `${overdueCustomers.length} debtors need follow-up`,
+      value: formatCurrency(dashboardCommercialSignals.outstandingValue),
+      meta: `${outstandingInvoices.length} invoices tying up cash`,
+      change: `${overdueCustomers.length} customers need finance follow-up`,
+      why: 'Cash stuck in debtors funds fuel, wages, repairs, and fleet growth.',
+      action: 'Escalate overdue balances by customer exposure before they become owner problems.',
       trend: kpiTrends.invoicesOutstanding,
       icon: CircleDollarSign,
       tone: 'orange',
@@ -245,8 +282,12 @@ export default function Dashboard() {
     {
       label: 'Revenue MTD',
       value: formatCurrency(revenueMtd),
-      meta: `${data.invoices.filter((invoice) => invoice.status === 'Paid').length} invoices paid`,
-      change: `${formatCurrency(moneyLeakage.reduce((sum, item) => sum + item.amount, 0))} leakage visibility`,
+      meta: `${dashboardCommercialSignals.paidInvoiceCount} paid invoices; ${dashboardCommercialSignals.completedNotInvoicedCount} jobs need billing today`,
+      change: `${formatCurrency(dashboardCommercialSignals.leakageTotal)} leakage visibility`,
+      why: 'Revenue only counts when completed work becomes an invoice and then cash.',
+      action: dashboardCommercialSignals.completedNotInvoicedCount > 0
+        ? 'Convert completed/POD jobs into invoices before close of business.'
+        : 'Keep checking completed jobs against invoices so no movement disappears.',
       trend: kpiTrends.revenueMtd,
       icon: FileText,
       tone: 'green',
@@ -255,14 +296,24 @@ export default function Dashboard() {
     {
       label: scenarioKey === 'tracker' ? 'Offline Trackers' : 'Fleet Utilization',
       value: scenarioKey === 'tracker' ? metrics.offlineTrackers : `${fleetUtilization}%`,
-      meta: scenarioKey === 'tracker' ? 'Vehicles with stale visibility' : 'Assets engaged or earning',
-      change: scenarioKey === 'tracker' ? 'Visibility needs recovery' : `${metrics.delayedJobs} delayed jobs today`,
+      meta: scenarioKey === 'tracker'
+        ? `${metrics.offlineTrackers} tracker gaps can affect proof of delivery`
+        : `${fleetUtilization}% of assets engaged or earning`,
+      change: scenarioKey === 'tracker'
+        ? 'Recover visibility before customers question location history'
+        : `${vehiclesNeedingAttention.length} vehicles need action before capacity drops`,
+      why: scenarioKey === 'tracker'
+        ? 'Tracker visibility protects dispatch decisions, ETA confidence, and POD evidence.'
+        : 'Utilized assets are earning, but weak health turns revenue into downtime quickly.',
+      action: scenarioKey === 'tracker'
+        ? 'Open tracking and verify each offline unit with the driver or provider.'
+        : 'Open vehicles and clear service, licence, and tracker risks.',
       trend: kpiTrends.fleet,
       icon: scenarioKey === 'tracker' ? ShieldAlert : Gauge,
       tone: scenarioKey === 'tracker' ? 'red' : 'slate',
       onClick: () => navigate(scenarioKey === 'tracker' ? '/tracking' : '/vehicles'),
     },
-  ], [activeJobs, data.invoices, data.liveVehicles, dateLabel, delayedJobs.length, fleetUtilization, jobsInProgress.length, kpiTrends.activeDeliveries, kpiTrends.fleet, kpiTrends.invoicesOutstanding, kpiTrends.jobsInProgress, kpiTrends.quotesPending, kpiTrends.revenueMtd, metrics.activeDeliveries, metrics.delayedJobs, metrics.offlineTrackers, moneyLeakage, navigate, outstandingInvoices, overdueCustomers.length, pendingQuotes, revenueMtd, scenarioKey]);
+  ], [dashboardCommercialSignals, dateLabel, delayedJobs.length, fleetUtilization, jobsInProgress.length, kpiTrends.activeDeliveries, kpiTrends.fleet, kpiTrends.invoicesOutstanding, kpiTrends.jobsInProgress, kpiTrends.quotesPending, kpiTrends.revenueMtd, metrics.activeDeliveries, metrics.offlineTrackers, navigate, outstandingInvoices.length, overdueCustomers.length, pendingQuotes.length, revenueMtd, scenarioKey, vehiclesNeedingAttention.length]);
 
   const fleetStatusCounts = useMemo(() => ({
     total: data.vehicles.length,
@@ -491,6 +542,192 @@ export default function Dashboard() {
     return ['Live operations visible', 'Dispatch aligned', 'Commercial risk under control'];
   }, [scenarioKey]);
 
+  const ownerCommand = useMemo(() => {
+    const linkedInvoicesByJob = data.invoices.reduce((acc, invoice) => {
+      if (invoice.jobId) {
+        acc[invoice.jobId] = invoice;
+      }
+      return acc;
+    }, {});
+    const completedNotInvoicedJobs = data.jobs.filter((job) => {
+      const linkedInvoice = linkedInvoicesByJob[job.id];
+      return job.status === 'Delivered' && (!linkedInvoice || linkedInvoice.status === 'Draft');
+    });
+    const delayedRevenue = delayedJobs.reduce((sum, job) => sum + job.price, 0);
+    const uninvoicedValue = completedNotInvoicedJobs.reduce((sum, job) => sum + job.price, 0);
+    const leakageTotal = moneyLeakage.reduce((sum, item) => sum + item.amount, 0);
+    const overdueInvoices = data.invoices
+      .filter((invoice) => invoice.status === 'Overdue')
+      .sort((a, b) => (b.balance || 0) - (a.balance || 0));
+    const overdueInvoiceValue = overdueInvoices.reduce((sum, invoice) => sum + invoice.balance, 0);
+    const offlineVehicles = data.liveVehicles.filter((vehicle) => vehicle.status === 'Offline');
+    const fuelWasteItem = moneyLeakage.find(
+      (item) => item.id === 'fuel-waste' || item.title.toLowerCase().includes('fuel')
+    );
+    const topVehicleRisk = vehiclesNeedingAttention[0];
+    const delayedJob = delayedJobs[0];
+    const offlineVehicle = offlineVehicles[0];
+    const uninvoicedJob = completedNotInvoicedJobs[0];
+    const overdueInvoice = overdueInvoices[0];
+    const newCustomerRequest = data.customerRequests.find((request) => request.status === 'New');
+
+    const riskItems = [
+      {
+        label: 'Delayed deliveries',
+        value: delayedJobs.length,
+        meta: `${formatCurrency(delayedRevenue)} delayed revenue`,
+        route: '/dispatch',
+        icon: AlertTriangle,
+        tone: delayedJobs.length > 0 ? 'danger' : 'stable',
+      },
+      {
+        label: 'Offline trackers',
+        value: Math.max(metrics.offlineTrackers, offlineVehicles.length),
+        meta: `${Math.max(metrics.offlineTrackers, offlineVehicles.length)} tracker gaps can affect POD`,
+        route: '/tracking',
+        icon: ShieldAlert,
+        tone: offlineVehicles.length > 0 || metrics.offlineTrackers > 0 ? 'danger' : 'stable',
+      },
+      {
+        label: 'Vehicles at risk',
+        value: vehiclesNeedingAttention.length,
+        meta: `${vehiclesNeedingAttention.length} vehicles can reduce capacity`,
+        route: '/vehicles',
+        icon: Truck,
+        tone: vehiclesNeedingAttention.length > 0 ? 'warning' : 'stable',
+      },
+      {
+        label: 'Unbilled completed jobs',
+        value: completedNotInvoicedJobs.length,
+        meta: `${formatCurrency(uninvoicedValue)} ready to bill`,
+        route: '/reports',
+        icon: FileText,
+        tone: completedNotInvoicedJobs.length > 0 ? 'blue' : 'stable',
+      },
+      {
+        label: 'Overdue invoices',
+        value: formatCurrency(Math.max(metrics.overdueInvoices, overdueInvoiceValue)),
+        meta: `${overdueInvoices.length} invoice${overdueInvoices.length === 1 ? '' : 's'} need cash follow-up`,
+        route: '/reports',
+        icon: CircleDollarSign,
+        tone: overdueInvoices.length > 0 || metrics.overdueInvoices > 0 ? 'danger' : 'stable',
+      },
+      {
+        label: 'Money leakage estimate',
+        value: formatCurrency(leakageTotal),
+        meta: 'Recover margin before month-end',
+        route: '/reports',
+        icon: Gauge,
+        tone: leakageTotal > 0 ? 'amber' : 'stable',
+      },
+    ];
+
+    const actionItems = [
+      delayedJob && {
+        id: `delay-${delayedJob.id}`,
+        issue: `${delayedJob.jobNumber} delayed to ${delayedJob.dropoffLocation}`,
+        impact: delayedJob.price,
+        impactLabel: formatCurrency(delayedJob.price),
+        responsible: getDriverById(delayedJob.assignedDriverId)?.name || 'Dispatch Manager',
+        action: 'Confirm ETA, notify the customer, and protect POD-to-invoice timing.',
+        route: `/jobs/${delayedJob.id}`,
+        tone: 'danger',
+      },
+      offlineVehicle && {
+        id: `tracker-${offlineVehicle.vehicleId}`,
+        issue: `${offlineVehicle.registration} tracker offline`,
+        impact: Math.max(2200, Math.round(leakageTotal * 0.08)),
+        impactLabel: formatCurrency(Math.max(2200, Math.round(leakageTotal * 0.08))),
+        responsible: offlineVehicle.driverName || 'Dispatch Manager',
+        action: 'Recover tracker visibility and confirm the truck position by phone.',
+        route: '/tracking',
+        tone: 'danger',
+      },
+      topVehicleRisk && {
+        id: `vehicle-${topVehicleRisk.vehicle.id}`,
+        issue: `${topVehicleRisk.vehicle.registration} needs fleet action`,
+        impact: Math.max(3500, (topVehicleRisk.openMaintenanceCount || 1) * 4500),
+        impactLabel: formatCurrency(Math.max(3500, (topVehicleRisk.openMaintenanceCount || 1) * 4500)),
+        responsible: getDriverById(topVehicleRisk.vehicle.driverId)?.name || 'Maintenance Manager',
+        action: topVehicleRisk.recommendedAction || 'Book workshop action before this becomes downtime.',
+        route: `/vehicles/${topVehicleRisk.vehicle.id}`,
+        tone: topVehicleRisk.status === 'critical' ? 'danger' : 'warning',
+      },
+      uninvoicedJob && {
+        id: `uninvoiced-${uninvoicedJob.id}`,
+        issue: `${uninvoicedJob.jobNumber} delivered but not invoiced`,
+        impact: uninvoicedJob.price,
+        impactLabel: formatCurrency(uninvoicedJob.price),
+        responsible: 'Finance Controller',
+        action: 'Convert the completed job and POD into an invoice today.',
+        route: '/reports',
+        tone: 'blue',
+      },
+      overdueInvoice && {
+        id: `invoice-${overdueInvoice.id}`,
+        issue: `${overdueInvoice.invoiceNumber} overdue`,
+        impact: overdueInvoice.balance,
+        impactLabel: formatCurrency(overdueInvoice.balance),
+        responsible: 'Finance Controller',
+        action: `Escalate payment follow-up with ${getCustomerById(overdueInvoice.customerId)?.companyName || 'the customer'}.`,
+        route: '/reports',
+        tone: 'danger',
+      },
+      fuelWasteItem && {
+        id: `fuel-${fuelWasteItem.id}`,
+        issue: fuelWasteItem.reason || 'Fuel waste pattern detected',
+        impact: fuelWasteItem.amount,
+        impactLabel: formatCurrency(fuelWasteItem.amount),
+        responsible: 'Operations Manager',
+        action: fuelWasteItem.recommendedAction || 'Review idle time and coach the highest-risk route today.',
+        route: '/tracking',
+        tone: 'amber',
+      },
+      newCustomerRequest && {
+        id: `customer-${newCustomerRequest.id}`,
+        issue: newCustomerRequest.title,
+        impact: Math.max(1800, Math.round((overdueInvoiceValue || leakageTotal || 12000) * 0.05)),
+        impactLabel: formatCurrency(Math.max(1800, Math.round((overdueInvoiceValue || leakageTotal || 12000) * 0.05))),
+        responsible: 'Customer Success Lead',
+        action: 'Acknowledge the request, assign ownership, and update the client before they chase.',
+        route: '/customers',
+        tone: 'teal',
+      },
+    ]
+      .filter(Boolean)
+      .sort((a, b) => b.impact - a.impact)
+      .slice(0, 5);
+
+    if (actionItems.length === 0) {
+      actionItems.push({
+        id: 'stable-review',
+        issue: 'Daily dispatch plan ready for review',
+        impact: 0,
+        impactLabel: 'R0',
+        responsible: 'Operations Manager',
+        action: 'Review the live board, confirm capacity, and keep the team aligned.',
+        route: '/dispatch',
+        tone: 'stable',
+      });
+    }
+
+    return {
+      actionItems,
+      riskItems,
+      totalActionImpact: actionItems.reduce((sum, item) => sum + item.impact, 0),
+    };
+  }, [
+    data.customerRequests,
+    data.invoices,
+    data.jobs,
+    data.liveVehicles,
+    delayedJobs,
+    metrics.offlineTrackers,
+    metrics.overdueInvoices,
+    moneyLeakage,
+    vehiclesNeedingAttention,
+  ]);
+
   const ownerControlCards = useMemo(() => {
     const linkedInvoicesByJob = data.invoices.reduce((acc, invoice) => {
       if (invoice.jobId) {
@@ -672,6 +909,72 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <section className="operations-risk-bar" aria-labelledby="operations-risk-heading">
+        <div className="operations-risk-copy">
+          <span className="owner-control-kicker">Operations Risk Bar</span>
+          <h2 id="operations-risk-heading">What is going wrong right now?</h2>
+          <p>Owner-level exception view for delivery risk, tracker visibility, billing leakage, and cash pressure.</p>
+        </div>
+        <div className="operations-risk-grid">
+          {ownerCommand.riskItems.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              className={`operations-risk-item tone-${item.tone}`}
+              onClick={() => navigate(item.route)}
+            >
+              <span className="operations-risk-icon">
+                <item.icon size={17} />
+              </span>
+              <span className="operations-risk-body">
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.meta}</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="dashboard-card action-required-panel" aria-labelledby="action-required-heading">
+        <div className="action-required-header">
+          <div>
+            <span className="owner-control-kicker">Action Required Today</span>
+            <h2 id="action-required-heading">Who needs to do what before close of business?</h2>
+            <p>Prioritised by rand impact so the team can move from visibility to action immediately.</p>
+          </div>
+          <div className="action-required-impact-card">
+            <span>Total action exposure</span>
+            <strong>{formatCurrency(ownerCommand.totalActionImpact)}</strong>
+            <small>{ownerCommand.actionItems.length} accountable action{ownerCommand.actionItems.length === 1 ? '' : 's'}</small>
+          </div>
+        </div>
+
+        <div className="action-required-table" role="table" aria-label="Action Required Today">
+          <div className="action-required-row action-required-row-head" role="row">
+            <span role="columnheader">Issue</span>
+            <span role="columnheader">Impact in rand</span>
+            <span role="columnheader">Responsible</span>
+            <span role="columnheader">Recommended action</span>
+            <span role="columnheader">Open</span>
+          </div>
+          {ownerCommand.actionItems.map((item) => (
+            <div key={item.id} className={`action-required-row tone-${item.tone}`} role="row">
+              <div className="action-required-issue" role="cell">
+                <span className="action-required-severity" aria-hidden="true" />
+                <strong>{item.issue}</strong>
+              </div>
+              <strong className="action-required-rand" role="cell">{item.impactLabel}</strong>
+              <span className="action-required-owner" role="cell">{item.responsible}</span>
+              <p role="cell">{item.action}</p>
+              <button type="button" className="action-btn small primary" onClick={() => navigate(item.route)}>
+                Open page
+              </button>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="dashboard-kpi-grid summit-kpi-grid">
         {kpis.map((kpi) => (
           <button key={kpi.label} type="button" className={`dashboard-kpi-card tone-${kpi.tone}`} onClick={kpi.onClick}>
@@ -683,6 +986,10 @@ export default function Dashboard() {
             </div>
             <strong className="dashboard-kpi-value">{kpi.value}</strong>
             <span className="dashboard-kpi-meta">{kpi.meta}</span>
+            <div className="dashboard-kpi-decision-copy">
+              <p><strong>Why it matters:</strong> {kpi.why}</p>
+              <p><strong>Recommended action:</strong> {kpi.action}</p>
+            </div>
             <div className="dashboard-kpi-sparkline" aria-hidden="true">
               {kpi.trend.map((point, index) => (
                 <span

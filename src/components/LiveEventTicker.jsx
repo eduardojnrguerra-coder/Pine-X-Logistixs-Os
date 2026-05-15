@@ -20,15 +20,39 @@ const normalizeSeverity = (severity) => {
   return 'info';
 };
 
+const getEventSignature = (message = '') => {
+  const normalized = message
+    .toLowerCase()
+    .replace(/\d{1,2}:\d{2}/g, '')
+    .replace(/\b(px|cf|ca)\s?\d+[\w-]*\b/g, 'vehicle')
+    .replace(/\btruck\s?\d+\b/g, 'vehicle')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (normalized.includes('delay risk')) return 'delay-risk';
+  if (normalized.includes('tracker') && (normalized.includes('lost') || normalized.includes('signal'))) return 'tracker-signal';
+  if (normalized.includes('low fuel')) return 'low-fuel';
+  if (normalized.includes('maintenance')) return 'maintenance';
+  if (normalized.includes('billing') || normalized.includes('invoice')) return 'billing-risk';
+  if (normalized.includes('customer')) return 'customer-risk';
+  if (normalized.includes('entered')) return normalized.replace(/^.* entered /, 'entered ');
+  if (normalized.includes('stopped at')) return normalized.replace(/^.* stopped at /, 'stopped at ');
+
+  return normalized;
+};
+
 const dedupeEvents = (items) => {
   const seen = new Set();
   return items.filter((item) => {
-    const key = item.message.toLowerCase().replace(/\d{1,2}:\d{2}/g, '').trim();
+    const key = getEventSignature(item.message);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 };
+
+const sortByNewest = (items) =>
+  [...items].sort((first, second) => new Date(second.timestamp || 0).getTime() - new Date(first.timestamp || 0).getTime());
 
 export default function LiveEventTicker({
   vehicles = [],
@@ -46,9 +70,9 @@ export default function LiveEventTicker({
   const derivedEvents = useMemo(() => {
     const scenarioEvent = SCENARIO_EVENTS[scenarioKey]
       ? {
-        id: `scenario-${scenarioKey}`,
-        timestamp: new Date().toISOString(),
-        severity: scenarioKey === 'normal' ? 'info' : 'warning',
+          id: `scenario-${scenarioKey}`,
+          timestamp: new Date().toISOString(),
+          severity: scenarioKey === 'normal' ? 'info' : 'warning',
           message: SCENARIO_EVENTS[scenarioKey],
         }
       : null;
@@ -63,12 +87,12 @@ export default function LiveEventTicker({
         message: `${vehicle.registration} ${vehicle.liveAlerts[0].label.toLowerCase()} near ${vehicle.nextStop}.`,
       }));
 
-    return dedupeEvents([scenarioEvent, ...urgentVehicleEvents, ...events].filter(Boolean))
-      .map((event) => ({
-        ...event,
-        severity: normalizeSeverity(event.severity),
-      }))
-      .slice(0, maxItems);
+    const normalizedEvents = [scenarioEvent, ...urgentVehicleEvents, ...events].filter(Boolean).map((event) => ({
+      ...event,
+      severity: normalizeSeverity(event.severity),
+    }));
+
+    return dedupeEvents(sortByNewest(normalizedEvents)).slice(0, maxItems);
   }, [compact, events, maxItems, scenarioKey, vehicles]);
 
   return (

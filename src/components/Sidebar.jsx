@@ -18,6 +18,7 @@ import {
   MessageSquareShare,
   Presentation,
   HeartHandshake,
+  Rocket,
 } from 'lucide-react';
 import { useState } from 'react';
 import { usePresenterMode } from '../context/PresenterModeContext';
@@ -38,6 +39,7 @@ const navigation = [
   { name: 'Maintenance', href: '/maintenance', icon: Wrench },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Tracking', href: '/tracking', icon: MapPin },
+  { name: 'Implementation', href: '/implementation', icon: Rocket },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
