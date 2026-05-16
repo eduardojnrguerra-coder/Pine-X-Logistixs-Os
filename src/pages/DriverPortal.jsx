@@ -15,6 +15,7 @@ import {
   FileText,
   Check,
 } from 'lucide-react';
+import PineXLogo from '../components/PineXLogo';
 import { JOBS, DRIVERS, getCustomerById, getVehicleById } from '../data/demoData';
 
 export default function DriverPortal() {
@@ -108,8 +109,13 @@ export default function DriverPortal() {
   return (
     <div className="driver-portal">
       <div className="page-header">
-        <h1>Driver App</h1>
-        <p>Mobile Portal</p>
+        <div className="branded-page-title">
+          <PineXLogo className="page-logo-badge" subtitle="Driver Portal" />
+          <div>
+            <h1>Driver App</h1>
+            <p>Mobile Portal</p>
+          </div>
+        </div>
       </div>
 
       <div className="driver-selector">

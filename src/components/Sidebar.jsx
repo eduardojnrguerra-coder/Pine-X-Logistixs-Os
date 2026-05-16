@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { usePresenterMode } from '../context/PresenterModeContext';
+import PineXLogo from './PineXLogo';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -59,10 +60,7 @@ export default function Sidebar() {
 
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <div className="logo">
-            <span className="logo-icon">PX</span>
-            <span className="logo-text">Pine X</span>
-          </div>
+          <PineXLogo className="sidebar-brand" subtitle="Logistics Command Centre" />
           <button type="button" className="action-btn small" onClick={() => setPanelOpen(true)}>
             Demo
           </button>

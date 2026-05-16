@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { BellRing, Download, FileText, PlusCircle, Truck } from 'lucide-react';
 import MessageThread from '../components/MessageThread';
 import DeliveryTimeline from '../components/DeliveryTimeline';
+import PineXLogo from '../components/PineXLogo';
 import StatusBadge from '../components/StatusBadge';
 import ScenarioBadge from '../components/ScenarioBadge';
 import { usePresenterMode } from '../context/PresenterModeContext';
@@ -116,9 +117,12 @@ export default function CustomerPortal() {
   return (
     <div className="page-container customer-portal-page">
       <div className="page-header">
-        <div>
-          <h1>Customer Portal</h1>
-          <p>Self-service delivery visibility, dispute handling, quote actions, and invoice follow-through.</p>
+        <div className="branded-page-title">
+          <PineXLogo className="page-logo-badge" subtitle="Customer Portal" />
+          <div>
+            <h1>Customer Portal</h1>
+            <p>Self-service delivery visibility, dispute handling, quote actions, and invoice follow-through.</p>
+          </div>
         </div>
         <ScenarioBadge scenario={scenario} />
       </div>

@@ -28,6 +28,7 @@ import {
 import FleetHudBar from './FleetHudBar';
 import FleetTray from './FleetTray';
 import LiveEventTicker from './LiveEventTicker';
+import PineXLogo from './PineXLogo';
 import ScenarioBadge from './ScenarioBadge';
 import VehicleIntelPanel from './VehicleIntelPanel';
 import {
@@ -730,8 +731,8 @@ export default function LiveFleetMap({
             <div className="map-fullscreen-topbar tactical-fullscreen-topbar">
               <div className="tactical-fullscreen-left">
                 <div className="tactical-fullscreen-title">
+                  <PineXLogo className="fullscreen-command-logo" subtitle="Fleet Control Room" />
                   <span>Real map command view</span>
-                  <h2>Fleet Control Room</h2>
                 </div>
                 {!focusMode && <div className="map-fullscreen-layer-bar">{layerControls}</div>}
               </div>

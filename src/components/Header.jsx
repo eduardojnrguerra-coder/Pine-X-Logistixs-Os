@@ -1,6 +1,7 @@
 import { Search, Bell, User } from 'lucide-react';
 import { useState } from 'react';
 import { usePresenterMode } from '../context/PresenterModeContext';
+import PineXLogo from './PineXLogo';
 import ScenarioBadge from './ScenarioBadge';
 
 export default function Header() {
@@ -21,6 +22,7 @@ export default function Header() {
       </div>
 
       <div className="header-actions">
+        <PineXLogo className="header-brand-badge" showText={false} />
         <ScenarioBadge scenario={scenario} compact />
         <button className="icon-button" aria-label="Notifications">
           <Bell size={20} />

@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import LiveFleetMap from '../components/LiveFleetMap';
+import PineXLogo from '../components/PineXLogo';
 import ScenarioBadge from '../components/ScenarioBadge';
 import StatusBadge from '../components/StatusBadge';
 import VehicleHealthScore from '../components/VehicleHealthScore';
@@ -834,7 +835,7 @@ export default function Dashboard() {
       <div className="dashboard-hero-card">
         <div className="dashboard-hero-copy">
           <div className="dashboard-hero-heading">
-            <span className="dashboard-hero-kicker">Designed by Pine X Systems</span>
+            <PineXLogo className="dashboard-brand-kicker" subtitle="Designed by Pine X Systems" />
             <h1>Pine X Logistics Command Centre</h1>
             <p>Premium freight operations visibility for trucks, jobs, drivers, invoices, and customer pressure.</p>
           </div>

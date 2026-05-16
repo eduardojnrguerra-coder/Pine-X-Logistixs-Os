@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import GuidedDemoTour from '../components/GuidedDemoTour';
 import DemoControlPanel from '../components/DemoControlPanel';
+import PineXLogo from '../components/PineXLogo';
 import TourProgressPanel from '../components/TourProgressPanel';
 import { usePresenterMode } from '../context/PresenterModeContext';
 
@@ -106,7 +107,7 @@ export default function SalesDemo() {
     <div className="page-container sales-demo-page">
       <div className="sales-demo-hero">
         <div className="sales-demo-hero-copy">
-          <span className="vehicle-list-card-id">Pine X Logistics Command Centre</span>
+          <PineXLogo className="sales-demo-brand" subtitle="Logistics Command Centre" />
           <h1>One control system for trucks, drivers, jobs, customers, invoices, and live tracking.</h1>
           <p>Walk a prospect from operational chaos to control, visibility, and recoverable margin using one connected demo system.</p>
           <div className="sales-demo-hero-actions">

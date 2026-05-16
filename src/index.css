@@ -76,8 +76,147 @@ body {
 }
 
 .sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 20px;
   border-bottom: 1px solid var(--border);
+}
+
+.pine-x-logo-lockup {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+}
+
+.pine-x-logo-mark {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(203, 213, 225, 0.72);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.9));
+  box-shadow:
+    0 12px 26px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94);
+}
+
+.pine-x-logo-mark img {
+  display: block;
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+}
+
+.pine-x-logo-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.pine-x-logo-copy strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pine-x-logo-copy small {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sidebar-brand .pine-x-logo-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+}
+
+.sidebar-brand .pine-x-logo-copy strong {
+  font-size: 1.05rem;
+}
+
+.header-brand-badge {
+  padding: 4px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.header-brand-badge .pine-x-logo-mark,
+.page-logo-badge .pine-x-logo-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.branded-page-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+}
+
+.page-logo-badge {
+  flex: 0 0 auto;
+}
+
+.dashboard-brand-kicker,
+.sales-demo-brand {
+  width: fit-content;
+  padding: 6px 10px 6px 6px;
+  border: 1px solid rgba(14, 165, 233, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.07);
+}
+
+.dashboard-brand-kicker .pine-x-logo-mark,
+.sales-demo-brand .pine-x-logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+.dashboard-brand-kicker .pine-x-logo-copy small,
+.sales-demo-brand .pine-x-logo-copy small {
+  color: #0369a1;
+}
+
+.fullscreen-command-logo .pine-x-logo-mark {
+  width: 38px;
+  height: 38px;
+  border-color: rgba(148, 163, 184, 0.34);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.22);
+}
+
+.fullscreen-command-logo .pine-x-logo-copy strong {
+  color: #f8fafc;
+}
+
+.fullscreen-command-logo .pine-x-logo-copy small {
+  color: rgba(153, 246, 228, 0.78);
 }
 
 .logo {
@@ -8878,6 +9017,54 @@ body {
   }
 }
 
+.tactical-fullscreen-title .fullscreen-command-logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tactical-fullscreen-title .fullscreen-command-logo .pine-x-logo-mark {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  color: inherit;
+  font-size: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.tactical-fullscreen-title .fullscreen-command-logo .pine-x-logo-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.tactical-fullscreen-title .fullscreen-command-logo .pine-x-logo-copy strong {
+  color: #f8fafc;
+  font-size: 0.96rem;
+}
+
+.tactical-fullscreen-title .fullscreen-command-logo .pine-x-logo-copy small {
+  color: rgba(153, 246, 228, 0.78);
+  font-size: 0.62rem;
+}
+
+.tactical-fullscreen-title > span {
+  margin-top: 5px;
+}
+
+@media (max-width: 900px) {
+  .header-brand-badge {
+    display: none;
+  }
+
+  .sidebar-header {
+    align-items: flex-start;
+  }
+
+  .branded-page-title {
+    align-items: flex-start;
+  }
+}
+
 .vehicle-intel-panel.compact .vehicle-intel-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -11464,4 +11651,34 @@ body {
     width: 100%;
     max-width: none;
   }
+}
+
+/* Final brand overrides for nested fullscreen spans after command-map polish rules. */
+.mode-fullscreen .tactical-fullscreen-title .fullscreen-command-logo {
+  display: inline-flex;
+}
+
+.mode-fullscreen .tactical-fullscreen-title .fullscreen-command-logo .pine-x-logo-mark {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  color: inherit;
+  font-size: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.mode-fullscreen .tactical-fullscreen-title .fullscreen-command-logo .pine-x-logo-copy {
+  display: grid;
+}
+
+.mode-fullscreen .tactical-fullscreen-title .fullscreen-command-logo .pine-x-logo-copy strong {
+  color: #f8fafc;
+  font-size: 0.96rem;
+}
+
+.mode-fullscreen .tactical-fullscreen-title .fullscreen-command-logo .pine-x-logo-copy small {
+  color: rgba(153, 246, 228, 0.78);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
 }
