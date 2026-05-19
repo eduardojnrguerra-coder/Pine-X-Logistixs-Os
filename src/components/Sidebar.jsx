@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { usePresenterMode } from '../context/PresenterModeContext';
+import CTAButton from './CTAButton';
 import PineXLogo from './PineXLogo';
 
 const navigation = [
@@ -83,6 +84,9 @@ export default function Sidebar() {
         </nav>
 
         <div className="sidebar-footer">
+          <CTAButton className="action-btn small primary sidebar-demo-cta" label="Book Demo" source="sidebar">
+            Book Demo
+          </CTAButton>
           <div className="company-info">
             <span className="company-name">Pine X Logistics</span>
             <span className="company-tag">Command Centre</span>

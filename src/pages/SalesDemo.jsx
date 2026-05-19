@@ -16,6 +16,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import GuidedDemoTour from '../components/GuidedDemoTour';
+import CTAButton from '../components/CTAButton';
 import DemoControlPanel from '../components/DemoControlPanel';
 import PineXLogo from '../components/PineXLogo';
 import TourProgressPanel from '../components/TourProgressPanel';
@@ -52,7 +53,6 @@ export default function SalesDemo() {
   } = usePresenterMode();
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStep, setTourStep] = useState(0);
-  const [ctaFeedback, setCtaFeedback] = useState('');
 
   useEffect(() => {
     recordTourEvent('sales_demo_opened', { scenarioKey });
@@ -112,6 +112,9 @@ export default function SalesDemo() {
           <p>Walk a prospect from operational chaos to control, visibility, and recoverable margin using one connected demo system.</p>
           <div className="sales-demo-hero-actions">
             <button className="primary-button" onClick={() => startTour(false)}>Start Guided Tour</button>
+            <CTAButton className="action-btn small primary" label="Request Demo" source="sales-demo-hero">
+              Request Demo
+            </CTAButton>
             <button className="action-btn small primary" onClick={() => navigate(scenario.nextScreen)}>Open Suggested Screen</button>
           </div>
         </div>
@@ -205,11 +208,14 @@ export default function SalesDemo() {
 
           <section className="dashboard-card sales-cta-card">
             <div className="card-header"><h3>Final CTA</h3></div>
-            {ctaFeedback && <div className="settings-feedback">{ctaFeedback}</div>}
             <div className="sales-cta-actions">
-              <button className="primary-button" onClick={() => setCtaFeedback('Audit request captured locally for the sales demo.')}>Book a logistics system audit</button>
-              <button className="action-btn small primary" onClick={() => { navigate('/reports'); setCtaFeedback('Opening the money leakage report view.'); }}>See your money leakage report</button>
-              <button className="action-btn small" onClick={() => setCtaFeedback('Pilot rollout story saved: start with one depot or one fleet group.')}>Start with one depot or one fleet group</button>
+              <CTAButton className="primary-button" label="Book a System Audit" source="sales-demo-final">
+                Book a System Audit
+              </CTAButton>
+              <button className="action-btn small primary" onClick={() => navigate('/reports')}>See your money leakage report</button>
+              <CTAButton className="action-btn small" label="Start With One Depot" source="sales-demo-final">
+                Start With One Depot
+              </CTAButton>
             </div>
           </section>
         </div>

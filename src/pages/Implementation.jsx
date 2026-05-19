@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import ScenarioBadge from '../components/ScenarioBadge';
+import CTAButton from '../components/CTAButton';
 import { usePresenterMode } from '../context/PresenterModeContext';
 
 const rolloutWeeks = [
@@ -154,6 +155,9 @@ export default function Implementation() {
             <button type="button" className="primary-button" onClick={() => navigate('/settings')}>
               Open integration settings
             </button>
+            <CTAButton className="action-btn small primary" label="Get My Free System Audit" source="implementation-hero">
+              Get My Free System Audit
+            </CTAButton>
             <button type="button" className="action-btn small primary" onClick={() => navigate('/sales-demo')}>
               Open sales demo
             </button>

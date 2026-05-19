@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import LiveFleetMap from '../components/LiveFleetMap';
+import CTAButton from '../components/CTAButton';
 import PineXLogo from '../components/PineXLogo';
 import ScenarioBadge from '../components/ScenarioBadge';
 import StatusBadge from '../components/StatusBadge';
@@ -852,6 +853,9 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+            <CTAButton className="action-btn small primary" label="Request Live Demo" source="dashboard">
+              Request Live Demo
+            </CTAButton>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import { Search, Bell, User } from 'lucide-react';
 import { useState } from 'react';
 import { usePresenterMode } from '../context/PresenterModeContext';
+import CTAButton from './CTAButton';
 import PineXLogo from './PineXLogo';
 import ScenarioBadge from './ScenarioBadge';
 
@@ -24,6 +25,9 @@ export default function Header() {
       <div className="header-actions">
         <PineXLogo className="header-brand-badge" showText={false} />
         <ScenarioBadge scenario={scenario} compact />
+        <CTAButton className="action-btn small primary" label="Contact Pine X" source="header">
+          Contact Pine X
+        </CTAButton>
         <button className="icon-button" aria-label="Notifications">
           <Bell size={20} />
           <span className="notification-badge">3</span>
