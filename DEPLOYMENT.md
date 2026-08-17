@@ -29,6 +29,25 @@ npx supabase link --project-ref <project-ref>
 npx supabase db push
 ```
 
+If `db push` fails with `hostname resolving error`, the direct database host
+(`db.<project-ref>.supabase.co`) is IPv6-only and your network has no IPv6
+route. Use the connection pooler instead — copy the exact URI from
+**Connect → Session pooler** in the dashboard, and push against it:
+
+```bash
+npx supabase db push --db-url "<session-pooler-uri>"
+```
+
+Use the **session** pooler on port 5432, not the transaction pooler on 6543;
+migrations need a session-scoped connection.
+
+A first attempt that dies partway can leave a transaction holding a lock on
+`auth.users`, after which every retry fails with `canceling statement due to
+statement timeout` on the first `create table`. Nothing has been applied when
+this happens — `npx supabase migration list --db-url "<uri>"` will show no
+remote versions. Wait for Postgres to reap the stuck session, or restart the
+project from the dashboard, then push again.
+
 `db push` applies everything in `supabase/migrations` in order: schema, RLS
 policies, grants, and the two policy tightenings. It deliberately does **not**
 run `seed.sql`, so no development accounts or demo data reach production.
