@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { resolveHomePath } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = { error: string | null };
@@ -23,7 +24,9 @@ export async function loginWithPassword(
     return { error: "Incorrect email or password." };
   }
 
-  redirect("/");
+  // Staff, drivers, and customers all sign in here but belong in different
+  // parts of the app.
+  redirect(await resolveHomePath());
 }
 
 export type MagicLinkState = { error: string | null; sent: boolean };

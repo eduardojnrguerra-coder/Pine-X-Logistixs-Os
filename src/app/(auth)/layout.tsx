@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { resolveHomePath } from "@/lib/auth/guards";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -7,7 +8,9 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) redirect("/");
+  // Already signed in — send them to whichever app their role belongs to
+  // instead of showing the login form again.
+  if (user) redirect(await resolveHomePath());
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-neutral-50 px-4 dark:bg-neutral-950">

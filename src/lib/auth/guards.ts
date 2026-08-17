@@ -69,6 +69,21 @@ export async function getCustomerUser(): Promise<CustomerUser | null> {
   };
 }
 
+// Where a signed-in user belongs. Staff land on the ops dashboard, drivers
+// and customers on their own portal. An authenticated user with neither a
+// profile nor a customer_users row is orphaned — invited in auth but never
+// provisioned — and goes to /unauthorized rather than bouncing between "/"
+// and "/login" forever.
+export async function resolveHomePath(): Promise<string> {
+  const profile = await getStaffProfile();
+  if (profile?.active) return profile.role === "driver" ? "/driver" : "/";
+
+  const customerUser = await getCustomerUser();
+  if (customerUser) return "/portal";
+
+  return "/unauthorized";
+}
+
 // For use at the top of a staff (dashboard) server component or server
 // action. Redirects to /login if unauthenticated, and to /unauthorized if
 // authenticated but lacking one of the allowed roles. RLS is the real
@@ -99,7 +114,14 @@ export async function requireDriver(): Promise<StaffProfile & { driverId: string
 
 // For use at the top of a (portal)/customer page/layout.
 export async function requireCustomer(): Promise<CustomerUser> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
   const customerUser = await getCustomerUser();
-  if (!customerUser) redirect("/login");
+  // Signed in, but as staff or a driver rather than a customer contact.
+  if (!customerUser) redirect("/unauthorized");
   return customerUser;
 }
