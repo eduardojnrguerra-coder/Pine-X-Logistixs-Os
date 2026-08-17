@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     // migration (see legacy-vite-app/README-MIGRATION.md). Not part of the
     // production build or lint surface.
     "legacy-vite-app/**",
+    // Scratch files written by the Supabase CLI on `supabase start`.
+    "supabase/.temp/**",
   ]),
 ]);
 
